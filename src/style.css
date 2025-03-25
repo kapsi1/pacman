@@ -1,0 +1,15 @@
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #000;
+}
+#gameCanvas {
+  margin-left: 10px;
+  margin-top: 10px;
+  /* image-rendering: pixelated; */
+  /* border: 1px solid #3b3b3b; */
+}
+#debug {
+  font-family: monospace;
+  color: #a3a3a3;
+}
