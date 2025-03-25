@@ -1,21 +1,36 @@
-import { ctx, CANVAS_HEIGHT_PX, CANVAS_WIDTH_PX } from './canvas';
-
+import { ctx, SCREEN_HEIGHT, SCREEN_WIDTH, TOP_MARGIN, BOTTOM_MARGIN, BOARD_HEIGHT } from './canvas';
+const DEBUG_DOTS = false;
 // game board is 26 tiles wide and 29 tiles high
 const boardS = `
-............**............
-.****.*****.**.*****.****.
-o****.*****.**.*****.****o
-.****.*****.**.*****.****.
+............##............
+.####.#####.##.#####.####.
+o#  #.#   #.##.#   #.#  #o
+.####.#####.##.#####.####.
 ..........................
-.****.**.********.**.****.
-.****.**.********.**.****.
-......**....**....**......
-*****.***** ** *****.*****
-    *.**          **.*    
-    *.**          **.*    
-    *.**          **.*    
-    *.**          **.*    
-*****.**          **.*****
+.####.##.########.##.####.
+.####.##.########.##.####.
+......##....##....##......
+#####.##### ## #####.#####
+    #.##### ## #####.#    
+    #.##          ##.#    
+    #.## ######## ##.#    
+#####.## #      # ##.#####
+     .   #      #   .     
+#####.## #      # ##.#####
+    #.## ######## ##.#    
+    #.##          ##.#    
+    #.## ######## ##.#    
+#####.## ######## ##.#####
+............##............
+.####.#####.##.#####.####.
+.####.#####.##.#####.####.
+o..##.......cc.......##..o
+##.##.##.########.##.##.##
+##.##.##.########.##.##.##
+......##....##....##......
+.##########.##.##########.
+.##########.##.##########.
+..........................
 `;
 
 const colors = {
@@ -28,13 +43,11 @@ const colors = {
 const board = boardS.split('\n');
 board.pop();
 board.shift();
-const fullWidth = CANVAS_WIDTH_PX;
-const fullHeight = CANVAS_HEIGHT_PX;
 
 function outerWall() {
   // left
   ctx.moveTo(0.5, 4);
-  ctx.lineTo(0.5, fullHeight - 4);
+  ctx.lineTo(0.5, SCREEN_WIDTH - 4);
   // top left corner
   ctx.moveTo(1.5, 4);
   ctx.lineTo(1.5, 2);
@@ -42,28 +55,28 @@ function outerWall() {
   ctx.lineTo(4, 1.5);
   // top
   ctx.moveTo(4, 0.5);
-  ctx.lineTo(fullWidth - 4, 0.5);
+  ctx.lineTo(SCREEN_WIDTH - 4, 0.5);
   // top right corner
-  ctx.moveTo(fullWidth - 4, 1.5);
-  ctx.lineTo(fullWidth - 2, 1.5);
-  ctx.moveTo(fullWidth - 1.5, 2);
-  ctx.lineTo(fullWidth - 1.5, 4);
+  ctx.moveTo(SCREEN_WIDTH - 4, 1.5);
+  ctx.lineTo(SCREEN_WIDTH - 2, 1.5);
+  ctx.moveTo(SCREEN_WIDTH - 1.5, 2);
+  ctx.lineTo(SCREEN_WIDTH - 1.5, 4);
   // right
-  ctx.moveTo(fullWidth - 0.5, 4);
-  ctx.lineTo(fullWidth - 0.5, fullHeight - 4);
+  ctx.moveTo(SCREEN_WIDTH - 0.5, 4);
+  ctx.lineTo(SCREEN_WIDTH - 0.5, SCREEN_HEIGHT - 4);
   // bottom right corner
-  ctx.moveTo(fullWidth - 1.5, fullHeight - 4);
-  ctx.lineTo(fullWidth - 1.5, fullHeight - 2);
-  ctx.moveTo(fullWidth - 2, fullHeight - 1.5);
-  ctx.lineTo(fullWidth - 4, fullHeight - 1.5);
+  ctx.moveTo(SCREEN_WIDTH - 1.5, SCREEN_HEIGHT - 4);
+  ctx.lineTo(SCREEN_WIDTH - 1.5, SCREEN_HEIGHT - 2);
+  ctx.moveTo(SCREEN_WIDTH - 2, SCREEN_HEIGHT - 1.5);
+  ctx.lineTo(SCREEN_WIDTH - 4, SCREEN_HEIGHT - 1.5);
   // bottom
-  ctx.moveTo(fullWidth - 4, fullHeight - 0.5);
-  ctx.lineTo(4, fullHeight - 0.5);
+  ctx.moveTo(SCREEN_WIDTH - 4, SCREEN_HEIGHT - 0.5);
+  ctx.lineTo(4, SCREEN_HEIGHT - 0.5);
   // bottom left corner
-  ctx.moveTo(4, fullHeight - 1.5);
-  ctx.lineTo(2, fullHeight - 1.5);
-  ctx.moveTo(1.5, fullHeight - 2);
-  ctx.lineTo(1.5, fullHeight - 4);
+  ctx.moveTo(4, SCREEN_HEIGHT - 1.5);
+  ctx.lineTo(2, SCREEN_HEIGHT - 1.5);
+  ctx.moveTo(1.5, SCREEN_HEIGHT - 2);
+  ctx.lineTo(1.5, SCREEN_HEIGHT - 4);
 }
 
 function rect(x: number, y: number, w: number, h: number, skipWall?: string) {
@@ -102,10 +115,10 @@ function drawWalls() {
   outerWall();
   // outer inner
   rect(
-    0 + outerWallSpacing,
-    0 + outerWallSpacing,
-    fullWidth - lineWidth - 2 * outerWallSpacing,
-    fullHeight - 2 * outerWallSpacing - 2 * lineWidth
+    outerWallSpacing,
+    outerWallSpacing,
+    SCREEN_WIDTH - lineWidth - 2 * outerWallSpacing,
+    SCREEN_HEIGHT - 2 * outerWallSpacing - 2 * lineWidth
   );
   // top row of rectangles
   rect(20, 20, 23, 14);
@@ -145,26 +158,33 @@ function bigDot(x: number, y: number) {
 }
 
 function drawDots() {
-  const margin = 11;
+  const margin = 11; // distance from wall
   const dotSize = 2;
   const dotGap = 8;
-  ctx.strokeStyle = colors.dot;
   ctx.fillStyle = colors.dot;
-  ctx.beginPath();
+  ctx.strokeStyle = colors.dot;
+  // ctx.beginPath();
   board.forEach((row, y) => {
     row.split('').forEach((char, x) => {
+      ctx.beginPath();
+      ctx.fillStyle = colors.dot;
       if (char === '.') {
-        ctx.rect(margin + x * dotGap, margin + y * dotGap, dotSize, dotSize);
+        ctx.rect(margin + x * dotGap, TOP_MARGIN + margin + y * dotGap, dotSize, dotSize);
       }
       if (char === 'o') {
-        bigDot(margin + x * dotGap - 3, margin + y * dotGap - 3);
+        bigDot(margin + x * dotGap - 3, TOP_MARGIN + margin + y * dotGap - 3);
       }
+      if (DEBUG_DOTS && char === '#') {
+        ctx.fillStyle = 'red';
+        ctx.rect(margin + x * dotGap, TOP_MARGIN + margin + y * dotGap, dotSize, dotSize);
+      }
+      ctx.fill();
     });
   });
-  ctx.fill();
+  // ctx.fill();
 }
 
 export function drawBoard() {
-  drawWalls();
+  // drawWalls();
   drawDots();
 }

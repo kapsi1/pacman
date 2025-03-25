@@ -1,4 +1,4 @@
-import { ctx, CANVAS_HEIGHT_PX, CANVAS_WIDTH_PX } from './canvas';
+import { ctx, SCREEN_HEIGHT, SCREEN_WIDTH } from './canvas';
 import { drawBoard } from './board';
 
 drawBoard();
