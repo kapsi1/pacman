@@ -30,33 +30,113 @@ board.shift();
 
 // game board is 26 tiles wide, 29 tiles high
 const fullWidth = CANVAS_WIDTH_PX;
+const fullHeight = CANVAS_HEIGHT_PX;
 const gridWidth = 26;
 const gridHeight = 29;
-const lineWidth = 2;
-const cornerRadius = 9;
-const outerWallSpacing = 5;
+const lineWidth = 1;
+const cornerRadius = 3;
+const outerWallSpacing = 3;
 const innerWidth = CANVAS_WIDTH_PX - 2 * (outerWallSpacing + 4 * lineWidth);
-const tileSize = innerWidth / gridWidth;
+const tileSize = Math.floor(innerWidth / gridWidth);
+console.log('tileSize', tileSize);
+
 const innerMargin = lineWidth / 2 + outerWallSpacing / 2;
+// const innerMargin = 0;
 const midWidth = innerWidth / 2;
+
+function drawOuterWall() {
+  ctx.strokeStyle = colors.wall;
+  ctx.beginPath();
+  // left
+  ctx.moveTo(0.5, 4);
+  ctx.lineTo(0.5, fullHeight - 4);
+  // top left corner
+  ctx.moveTo(1.5, 4);
+  ctx.lineTo(1.5, 2);
+  ctx.moveTo(2, 1.5);
+  ctx.lineTo(4, 1.5);
+  // top
+  ctx.moveTo(4, 0.5);
+  ctx.lineTo(fullWidth - 4, 0.5);
+  // top right corner
+  ctx.moveTo(fullWidth - 4, 1.5);
+  ctx.lineTo(fullWidth - 2, 1.5);
+  ctx.moveTo(fullWidth - 1.5, 2);
+  ctx.lineTo(fullWidth - 1.5, 4);
+  // right
+  ctx.moveTo(fullWidth - 0.5, 4);
+  ctx.lineTo(fullWidth - 0.5, fullHeight - 4);
+  // bottom right corner
+  ctx.moveTo(fullWidth - 1.5, fullHeight - 4);
+  ctx.lineTo(fullWidth - 1.5, fullHeight - 2);
+  ctx.moveTo(fullWidth - 2, fullHeight - 1.5);
+  ctx.lineTo(fullWidth - 4, fullHeight - 1.5);
+  // bottom
+  ctx.moveTo(fullWidth - 4, fullHeight - 0.5);
+  ctx.lineTo(4, fullHeight - 0.5);
+  // bottom left corner
+  ctx.moveTo(4, fullHeight - 1.5);
+  ctx.lineTo(2, fullHeight - 1.5);
+  ctx.moveTo(1.5, fullHeight - 2);
+  ctx.lineTo(1.5, fullHeight - 4);
+  ctx.stroke();
+}
+
+function rect(x: number, y: number, w: number, h: number) {
+  ctx.strokeStyle = colors.wall;
+  ctx.fillStyle = colors.wall;
+  ctx.beginPath();
+  // top
+  ctx.moveTo(x + 2, y + 0.5);
+  ctx.lineTo(x + w - 1, y + 0.5);
+  // top right corner
+  ctx.fillRect(x + w - 1, y + 1, 1, 1);
+  // right
+  ctx.moveTo(x + w + 0.5, y + 2);
+  ctx.lineTo(x + w + 0.5, y + h);
+  // bottom right corner
+  ctx.fillRect(x + w - 1, y + h, 1, 1);
+  // bottom
+  ctx.moveTo(x + w - 1, y + h + 1.5);
+  ctx.lineTo(x + 2, y + h + 1.5);
+  // bottom left corner
+  ctx.fillRect(x + 1, y + h, 1, 1);
+  // left
+  ctx.moveTo(x + 0.5, y + h);
+  ctx.lineTo(x + 0.5, y + 2);
+  // top left corner
+  ctx.fillRect(x + 1, y + 1, 1, 1);
+  ctx.stroke();
+}
 
 function drawWalls() {
   const topY = (tileOffset: number) => innerMargin + tileOffset * tileSize;
   const leftX = (tileOffset: number) => innerMargin + tileOffset * tileSize;
 
-  ctx.strokeStyle = colors.wall;
-  ctx.fillStyle = colors.background;
+  // ctx.strokeStyle = colors.wall;
+  // ctx.fillStyle = colors.background;
   // ctx.fillStyle = 'red';
   ctx.lineWidth = lineWidth;
 
   // outer walls
-  ctx.roundRect(lineWidth / 2, lineWidth / 2, fullWidth - lineWidth, tileSize * gridHeight - lineWidth, cornerRadius);
-  ctx.roundRect(
-    lineWidth / 2 + outerWallSpacing,
-    lineWidth / 2 + outerWallSpacing,
+  // ctx.roundRect(lineWidth / 2, lineWidth / 2, fullWidth - lineWidth, tileSize * gridHeight - lineWidth, cornerRadius);
+  // ctx.roundRect(lineWidth / 2, lineWidth / 2, fullWidth - lineWidth, fullHeight - lineWidth, cornerRadius);
+  // ctx.roundRect(
+  //   lineWidth / 2 + outerWallSpacing,
+  //   lineWidth / 2 + outerWallSpacing,
+  //   fullWidth - lineWidth - 2 * outerWallSpacing,
+  //   tileSize * gridHeight - lineWidth,
+  //   cornerRadius
+  // );
+  // outer outer
+  // rect(0, 0, fullWidth - lineWidth, fullHeight - 2 * lineWidth);
+  drawOuterWall();
+  // outer inner
+  rect(
+    0 + outerWallSpacing,
+    0 + outerWallSpacing,
     fullWidth - lineWidth - 2 * outerWallSpacing,
-    tileSize * gridHeight - lineWidth,
-    cornerRadius
+    fullHeight - 2 * outerWallSpacing - 2 * lineWidth
   );
   // middle indentations
   // left
@@ -68,6 +148,7 @@ function drawWalls() {
     4 * tileSize - 2 * outerWallSpacing,
     cornerRadius
   );
+  ctx.stroke();
   // ctx.roundRect(
   //   leftX(0),
   //   topY(9) + 2 * outerWallInnerSpacing,
@@ -86,11 +167,23 @@ function drawWalls() {
   // );
 
   // top row of walls
-  ctx.roundRect(leftX(2), topY(2), 3 * tileSize, 2 * tileSize, cornerRadius);
-  ctx.roundRect(leftX(7), topY(2), 4 * tileSize, 2 * tileSize, cornerRadius);
-  ctx.roundRect(midWidth + tileSize / 4, lineWidth, tileSize, tileSize * 4 + 3, cornerRadius);
-  ctx.roundRect(leftX(16), topY(2), 4 * tileSize, 2 * tileSize, cornerRadius);
-  ctx.roundRect(leftX(22), topY(2), 3 * tileSize, 2 * tileSize, cornerRadius);
+  // ctx.roundRect(leftX(2), topY(2), 3 * tileSize, 2 * tileSize, cornerRadius);
+  // ctx.roundRect(leftX(7), topY(2), 4 * tileSize, 2 * tileSize, cornerRadius);
+  // ctx.roundRect(midWidth + tileSize / 4 + 0.5, lineWidth, tileSize, tileSize * 4 + 3, cornerRadius);
+  // ctx.roundRect(leftX(16), topY(2), 4 * tileSize, 2 * tileSize, cornerRadius);
+  // ctx.roundRect(leftX(22), topY(2), 3 * tileSize, 2 * tileSize, cornerRadius);
+
+  // rect(leftX(2), topY(2), 3 * tileSize, 2 * tileSize);
+  // rect(leftX(7), topY(2) + 2, 4 * tileSize, 1.5 * tileSize + 1);
+  // rect(leftX(16), topY(2), 4 * tileSize, 2 * tileSize);
+  // rect(leftX(22), topY(2), 3 * tileSize, 2 * tileSize);
+
+  // top row of rectangles
+  // short 23 x 15, wide 31 x 15
+  rect(20, 20, 23, 15);
+  rect(60, 20, 31, 15);
+  rect(132, 20, 31, 15);
+  rect(180, 20, 23, 15);
 
   // second row of walls
   // leftmost
@@ -122,10 +215,12 @@ function drawWalls() {
 }
 
 export function drawBoard() {
-  const marginLeft = innerMargin + 17;
-  const marginTop = innerMargin + 17;
-  const dotSize = 4.5;
-  const bigDotRadius = 8;
+  // const marginLeft = innerMargin + 17;
+  // const marginTop = innerMargin + 17;
+  const marginLeft = 10;
+  const marginTop = 10;
+  const dotSize = 2;
+  const bigDotRadius = 3.5;
   drawWalls();
   ctx.beginPath();
   ctx.strokeStyle = colors.dot;
@@ -133,7 +228,9 @@ export function drawBoard() {
   board.forEach((row, y) => {
     row.split('').forEach((char, x) => {
       if (char === '.') {
-        ctx.rect(marginLeft + x * tileSize, marginTop + y * tileSize, dotSize, dotSize);
+        console.log(marginLeft + x * tileSize + 1, marginTop + y * tileSize + 1);
+
+        ctx.rect(marginLeft + x * tileSize + 1, marginTop + y * tileSize + 1, dotSize, dotSize);
       }
       if (char === 'o') {
         ctx.arc(marginLeft + x * tileSize + 2.5, marginTop + y * tileSize + 2, bigDotRadius, 0, 2 * Math.PI);
