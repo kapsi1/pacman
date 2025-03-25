@@ -1,5 +1,6 @@
 import { ctx, CANVAS_HEIGHT_PX, CANVAS_WIDTH_PX } from './canvas';
 
+// game board is 26 tiles wide and 29 tiles high
 const boardS = `
 ............**............
 .****.*****.**.*****.****.
@@ -65,12 +66,16 @@ function outerWall() {
   ctx.lineTo(1.5, fullHeight - 4);
 }
 
-function rect(x: number, y: number, w: number, h: number) {
+function rect(x: number, y: number, w: number, h: number, skipWall?: string) {
   // top
-  ctx.moveTo(x + 2, y + 0.5);
-  ctx.lineTo(x + w - 1, y + 0.5);
-  // top right corner
-  ctx.fillRect(x + w - 1, y + 1, 1, 1);
+  if (skipWall !== 'top') {
+    ctx.moveTo(x + 2, y + 0.5);
+    ctx.lineTo(x + w - 1, y + 0.5);
+    // top right corner
+    ctx.fillRect(x + w - 1, y + 1, 1, 1);
+    // top left corner
+    ctx.fillRect(x + 1, y + 1, 1, 1);
+  }
   // right
   ctx.moveTo(x + w + 0.5, y + 2);
   ctx.lineTo(x + w + 0.5, y + h);
@@ -84,15 +89,6 @@ function rect(x: number, y: number, w: number, h: number) {
   // left
   ctx.moveTo(x + 0.5, y + h);
   ctx.lineTo(x + 0.5, y + 2);
-  // top left corner
-  ctx.fillRect(x + 1, y + 1, 1, 1);
-}
-
-function bigDot(x: number, y: number) {
-  // 8 x 8
-  ctx.rect(x + 2, y, 4, 8);
-  ctx.rect(x + 1, y + 1, 6, 6);
-  ctx.rect(x, y + 2, 8, 4);
 }
 
 function drawWalls() {
@@ -111,11 +107,24 @@ function drawWalls() {
     fullWidth - lineWidth - 2 * outerWallSpacing,
     fullHeight - 2 * outerWallSpacing - 2 * lineWidth
   );
-  // top row of walls
+  // top row of rectangles
   rect(20, 20, 23, 14);
   rect(60, 20, 31, 14);
   rect(132, 20, 31, 14);
   rect(180, 20, 23, 14);
+  ctx.stroke();
+
+  // top vertical wall
+  ctx.strokeStyle = colors.background;
+  ctx.beginPath();
+  ctx.moveTo(107, 3.5);
+  ctx.lineTo(117, 3.5);
+  ctx.stroke();
+  ctx.fillRect(107, 4, 1, 1);
+  ctx.fillRect(116, 4, 1, 1);
+  ctx.strokeStyle = colors.wall;
+  ctx.beginPath();
+  rect(108, 3, 7, 31, 'top');
 
   // second row of walls
   // left rectangle
@@ -126,6 +135,13 @@ function drawWalls() {
   // right rectangle
   rect(180, 51, 23, 7);
   ctx.stroke();
+}
+
+function bigDot(x: number, y: number) {
+  // 8 x 8
+  ctx.rect(x + 2, y, 4, 8);
+  ctx.rect(x + 1, y + 1, 6, 6);
+  ctx.rect(x, y + 2, 8, 4);
 }
 
 function drawDots() {
