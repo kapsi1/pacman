@@ -24,7 +24,7 @@ o#  #.#   #.##.#   #.#  #o
 ............##............
 .####.#####.##.#####.####.
 .####.#####.##.#####.####.
-o..##.......cc.......##..o
+o..##.......  .......##..o
 ##.##.##.########.##.##.##
 ##.##.##.########.##.##.##
 ......##....##....##......
@@ -37,7 +37,6 @@ const colors = {
   background: 'black',
   dot: '#ffb897',
   wall: '#2121de',
-  pacman: '#ffff00',
 };
 
 const board = boardS.split('\n');
@@ -163,12 +162,16 @@ function drawDots() {
   const dotGap = 8;
   ctx.fillStyle = colors.dot;
   ctx.strokeStyle = colors.dot;
-  // ctx.beginPath();
+  ctx.beginPath();
   board.forEach((row, y) => {
+    console.log('y', y, 'row', row);
+    console.log('dotY', TOP_MARGIN + margin + y * dotGap);
     row.split('').forEach((char, x) => {
-      ctx.beginPath();
+      // ctx.beginPath();
       ctx.fillStyle = colors.dot;
       if (char === '.') {
+        console.log('x', x, 'dotX', margin + x * dotGap);
+
         ctx.rect(margin + x * dotGap, TOP_MARGIN + margin + y * dotGap, dotSize, dotSize);
       }
       if (char === 'o') {
@@ -178,10 +181,10 @@ function drawDots() {
         ctx.fillStyle = 'red';
         ctx.rect(margin + x * dotGap, TOP_MARGIN + margin + y * dotGap, dotSize, dotSize);
       }
-      ctx.fill();
+      // ctx.fill();
     });
   });
-  // ctx.fill();
+  ctx.fill();
 }
 
 export function drawBoard() {
