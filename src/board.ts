@@ -4,7 +4,9 @@ export const WALL_MARGIN = 11; // distance from wall
 export const DOT_GAP = 8;
 
 // const DEBUG_DOTS = true;
+// const DRAW_GRID = true;
 const DEBUG_DOTS = false;
+const DRAW_GRID = false;
 
 // game board is 26 tiles wide and 29 tiles high
 const boardS = `
@@ -78,9 +80,13 @@ function drawDots() {
       }
       if (DEBUG_DOTS) {
         ctx.fillStyle = char === '#' ? 'red' : 'green';
-        if (y === 19 && x === 11) ctx.fillStyle = 'yellow';
         ctx.rect(dotX, dotY, dotSize, dotSize);
         ctx.fill();
+      }
+      if (DRAW_GRID) {
+        ctx.lineWidth = 0.5;
+        ctx.strokeStyle = 'gray';
+        ctx.strokeRect(dotX, dotY, DOT_GAP, DOT_GAP);
       }
     });
   });
