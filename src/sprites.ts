@@ -1,18 +1,15 @@
 import { ctx } from './canvas';
+import { Direction } from './main';
 
-export enum Direction {
-  Left = 'left',
-  Up = 'up',
-  Right = 'right',
-  Down = 'down',
-}
 // state of Pacman's mouth
-export type Frame = 0 | 1 | 2; //open, half, closed mouth
+// open, half, closed
+export type Frame = 0 | 1 | 2;
 
 const sprites = document.images[0];
 const pacmanSpriteSize = 13;
 
 export function drawPacman(x: number, y: number, direction: Direction, frame: Frame) {
+  // console.log('drawPacman', x, y, direction, frame);
   let srcX: number;
   let srcY: number;
   if (frame === 0) {
@@ -33,6 +30,6 @@ export function drawPacman(x: number, y: number, direction: Direction, frame: Fr
   x = Math.round(x - pacmanSpriteSize / 2) + 1;
   // drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, destinationX, destinationY, destinationWidth, destinationHeight)
   ctx.drawImage(sprites, srcX, srcY, pacmanSpriteSize, pacmanSpriteSize, x, y, pacmanSpriteSize, pacmanSpriteSize);
-  ctx.fillStyle = 'red';
+  ctx.fillStyle = 'orange';
   ctx.fillRect(dotX, dotY, 2, 2);
 }

@@ -1,20 +1,25 @@
-import { ctx, SCREEN_HEIGHT, SCREEN_WIDTH } from './canvas';
-import { drawBoard } from './board';
-import { drawPacman, Direction, Frame } from './sprites';
+import { ctx, SCREEN_HEIGHT, SCREEN_WIDTH, TOP_MARGIN } from './canvas';
+import { board, drawBoard, WALL_MARGIN, DOT_GAP } from './board';
+import { drawPacman, Frame } from './sprites';
+
+export enum Direction {
+  Left = 'left',
+  Up = 'up',
+  Right = 'right',
+  Down = 'down',
+}
 
 const debugEl = document.querySelector('#debug') as HTMLDivElement;
 // 3.5s na przejście dolnego rzędu - 202 px od pierwszej do ostatniej kropki
 // 1 s = 57,71 px
-// const PACMAN_SPEED = 20; // px/s
-const PACMAN_SPEED = 57.71; // px/s
+const PACMAN_SPEED = 10; // px/s
+// const PACMAN_SPEED = 57.71; // px/s
 let direction = Direction.Right;
-const PACMAN_SPRITE_SIZE = 13;
 //position in dot grid
 let posY = 211;
 let posX = 111;
-// //offset position by sprite size
-// posY = Math.round(posY - PACMAN_SPRITE_SIZE / 2) + 1;
-// posX = Math.round(posX - PACMAN_SPRITE_SIZE / 2) + 1;
+// let posY = 187;
+// let posX = 99;
 let pacmanFrame: Frame = 0;
 let pause = false;
 let lastTimestamp: number | null = null;
@@ -49,8 +54,68 @@ function tick(timestamp: number) {
 
   requestAnimationFrame(tick);
 }
+// console.log(board);
+
+// Called when trying to change directions on Pacman.
+// Returns null if new direction is blocked, and if it's allowed,
+// returns the changed direction, snapped to grid.
+function newPos(x: number, y: number, direction: Direction) {
+  // let gridX = (Math.round(x) - WALL_MARGIN) / DOT_GAP;
+  // let gridY = (Math.round(y) - WALL_MARGIN - TOP_MARGIN) / DOT_GAP;
+  let gridX = Math.round((Math.round(x) - WALL_MARGIN) / DOT_GAP);
+  let gridY = Math.round((Math.round(y) - WALL_MARGIN - TOP_MARGIN) / DOT_GAP);
+  console.log(
+    'x',
+    x,
+    'round',
+    Math.round(x),
+    '-11',
+    Math.round(x) - WALL_MARGIN,
+    '/8',
+    (Math.round(x) - WALL_MARGIN) / DOT_GAP,
+    'round',
+    gridX,
+    'toX',
+    gridX * DOT_GAP + WALL_MARGIN
+  );
+  console.log(
+    'y',
+    y,
+    'round',
+    Math.round(y),
+    '-35',
+    Math.round(y) - WALL_MARGIN - TOP_MARGIN,
+    '/8',
+    (Math.round(x) - WALL_MARGIN - TOP_MARGIN) / DOT_GAP,
+    'round',
+    gridY,
+    'toX',
+    TOP_MARGIN + WALL_MARGIN + gridY * DOT_GAP
+  );
+  if (direction === Direction.Right) gridX++;
+  if (direction === Direction.Left) gridX--;
+  if (direction === Direction.Up) gridY--;
+  if (direction === Direction.Down) gridY++;
+  const char = board[gridY][gridX];
+  console.log(
+    // `board[${gridY}]`,
+    // board[gridY],
+    `char`,
+    board[gridY][gridX],
+    'isAllowed',
+    char !== undefined && char !== '#'
+  );
+  if (char === undefined || char === '#') return null;
+  // else return [gridX * DOT_GAP + WALL_MARGIN, TOP_MARGIN + WALL_MARGIN + gridY * DOT_GAP];
+  else if (direction === Direction.Up || direction === Direction.Down) return gridX * DOT_GAP + WALL_MARGIN;
+  else return TOP_MARGIN + WALL_MARGIN + gridY * DOT_GAP;
+}
 
 document.addEventListener('keydown', (event) => {
+  // if (direction === Direction.Right) gridX++;
+  // if (direction === Direction.Left) gridX--;
+  // if (direction === Direction.Up) gridY--;
+  // if (direction === Direction.Down) gridY++;
   switch (event.key) {
     case ' ':
       pause = !pause;
@@ -60,18 +125,38 @@ document.addEventListener('keydown', (event) => {
       }
       break;
     case 'w':
-      direction = Direction.Up;
+      // console.log(Direction.Up, isDirectionAllowed(posX, posY, Direction.Up));
+      if (newPos(posX, posY, Direction.Up)) {
+        // posY -= 8;
+        direction = Direction.Up;
+      }
       break;
     case 's':
-      direction = Direction.Down;
+      if (direction === Direction.Down) return;
+      const pos = newPos(posX, posY, Direction.Down);
+      if (pos) {
+        posX = pos;
+        direction = Direction.Down;
+      }
       break;
     case 'd':
-      direction = Direction.Right;
+      // console.log(Direction.Right, isDirectionAllowed(posX, posY, Direction.Right));
+      if (newPos(posX, posY, Direction.Right)) {
+        // posX += 8;
+        direction = Direction.Right;
+      }
       break;
     case 'a':
-      direction = Direction.Left;
+      // console.log(Direction.Left, isDirectionAllowed(posX, posY, Direction.Left));
+      if (newPos(posX, posY, Direction.Left)) {
+        // posX -= 8;
+        direction = Direction.Left;
+      }
       break;
   }
+  ctx.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+  drawBoard();
+  drawPacman(posX, posY, direction, pacmanFrame);
 });
 
 drawBoard();

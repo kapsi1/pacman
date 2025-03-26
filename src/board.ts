@@ -1,5 +1,11 @@
-import { ctx, SCREEN_HEIGHT, SCREEN_WIDTH, TOP_MARGIN, BOTTOM_MARGIN, BOARD_HEIGHT } from './canvas';
+import { ctx, TOP_MARGIN } from './canvas';
+
+export const WALL_MARGIN = 11; // distance from wall
+export const DOT_GAP = 8;
+
+// const DEBUG_DOTS = true;
 const DEBUG_DOTS = false;
+
 // game board is 26 tiles wide and 29 tiles high
 const boardS = `
 ............##............
@@ -39,115 +45,9 @@ const colors = {
   wall: '#2121de',
 };
 
-const board = boardS.split('\n');
+export const board = boardS.split('\n');
 board.pop();
 board.shift();
-
-function outerWall() {
-  // left
-  ctx.moveTo(0.5, 4);
-  ctx.lineTo(0.5, SCREEN_WIDTH - 4);
-  // top left corner
-  ctx.moveTo(1.5, 4);
-  ctx.lineTo(1.5, 2);
-  ctx.moveTo(2, 1.5);
-  ctx.lineTo(4, 1.5);
-  // top
-  ctx.moveTo(4, 0.5);
-  ctx.lineTo(SCREEN_WIDTH - 4, 0.5);
-  // top right corner
-  ctx.moveTo(SCREEN_WIDTH - 4, 1.5);
-  ctx.lineTo(SCREEN_WIDTH - 2, 1.5);
-  ctx.moveTo(SCREEN_WIDTH - 1.5, 2);
-  ctx.lineTo(SCREEN_WIDTH - 1.5, 4);
-  // right
-  ctx.moveTo(SCREEN_WIDTH - 0.5, 4);
-  ctx.lineTo(SCREEN_WIDTH - 0.5, SCREEN_HEIGHT - 4);
-  // bottom right corner
-  ctx.moveTo(SCREEN_WIDTH - 1.5, SCREEN_HEIGHT - 4);
-  ctx.lineTo(SCREEN_WIDTH - 1.5, SCREEN_HEIGHT - 2);
-  ctx.moveTo(SCREEN_WIDTH - 2, SCREEN_HEIGHT - 1.5);
-  ctx.lineTo(SCREEN_WIDTH - 4, SCREEN_HEIGHT - 1.5);
-  // bottom
-  ctx.moveTo(SCREEN_WIDTH - 4, SCREEN_HEIGHT - 0.5);
-  ctx.lineTo(4, SCREEN_HEIGHT - 0.5);
-  // bottom left corner
-  ctx.moveTo(4, SCREEN_HEIGHT - 1.5);
-  ctx.lineTo(2, SCREEN_HEIGHT - 1.5);
-  ctx.moveTo(1.5, SCREEN_HEIGHT - 2);
-  ctx.lineTo(1.5, SCREEN_HEIGHT - 4);
-}
-
-function rect(x: number, y: number, w: number, h: number, skipWall?: string) {
-  // top
-  if (skipWall !== 'top') {
-    ctx.moveTo(x + 2, y + 0.5);
-    ctx.lineTo(x + w - 1, y + 0.5);
-    // top right corner
-    ctx.fillRect(x + w - 1, y + 1, 1, 1);
-    // top left corner
-    ctx.fillRect(x + 1, y + 1, 1, 1);
-  }
-  // right
-  ctx.moveTo(x + w + 0.5, y + 2);
-  ctx.lineTo(x + w + 0.5, y + h);
-  // bottom right corner
-  ctx.fillRect(x + w - 1, y + h, 1, 1);
-  // bottom
-  ctx.moveTo(x + w - 1, y + h + 1.5);
-  ctx.lineTo(x + 2, y + h + 1.5);
-  // bottom left corner
-  ctx.fillRect(x + 1, y + h, 1, 1);
-  // left
-  ctx.moveTo(x + 0.5, y + h);
-  ctx.lineTo(x + 0.5, y + 2);
-}
-
-function drawWalls() {
-  const lineWidth = 1;
-  const outerWallSpacing = 3;
-  ctx.strokeStyle = colors.wall;
-  ctx.fillStyle = colors.wall;
-  ctx.lineWidth = lineWidth;
-  ctx.beginPath();
-  // outer outer
-  outerWall();
-  // outer inner
-  rect(
-    outerWallSpacing,
-    outerWallSpacing,
-    SCREEN_WIDTH - lineWidth - 2 * outerWallSpacing,
-    SCREEN_HEIGHT - 2 * outerWallSpacing - 2 * lineWidth
-  );
-  // top row of rectangles
-  rect(20, 20, 23, 14);
-  rect(60, 20, 31, 14);
-  rect(132, 20, 31, 14);
-  rect(180, 20, 23, 14);
-  ctx.stroke();
-
-  // top vertical wall
-  ctx.strokeStyle = colors.background;
-  ctx.beginPath();
-  ctx.moveTo(107, 3.5);
-  ctx.lineTo(117, 3.5);
-  ctx.stroke();
-  ctx.fillRect(107, 4, 1, 1);
-  ctx.fillRect(116, 4, 1, 1);
-  ctx.strokeStyle = colors.wall;
-  ctx.beginPath();
-  rect(108, 3, 7, 31, 'top');
-
-  // second row of walls
-  // left rectangle
-  rect(20, 51, 23, 7);
-  // left T
-  // middle T
-  // right T
-  // right rectangle
-  rect(180, 51, 23, 7);
-  ctx.stroke();
-}
 
 function bigDot(x: number, y: number) {
   // 8 x 8
@@ -157,37 +57,36 @@ function bigDot(x: number, y: number) {
 }
 
 function drawDots() {
-  const margin = 11; // distance from wall
   const dotSize = 2;
-  const dotGap = 8;
   ctx.fillStyle = colors.dot;
   ctx.strokeStyle = colors.dot;
   ctx.beginPath();
   board.forEach((row, y) => {
-    console.log('y', y, 'row', row);
-    console.log('dotY', TOP_MARGIN + margin + y * dotGap);
+    // console.log('y', y, 'row', row);
+    // console.log('dotY', TOP_MARGIN + WALL_MARGIN + y * DOT_GAP);
     row.split('').forEach((char, x) => {
-      // ctx.beginPath();
+      if (DEBUG_DOTS) ctx.beginPath();
       ctx.fillStyle = colors.dot;
+      const dotX = WALL_MARGIN + x * DOT_GAP;
+      const dotY = TOP_MARGIN + WALL_MARGIN + y * DOT_GAP;
       if (char === '.') {
-        console.log('x', x, 'dotX', margin + x * dotGap);
-
-        ctx.rect(margin + x * dotGap, TOP_MARGIN + margin + y * dotGap, dotSize, dotSize);
+        // console.log('x', x, 'dotX', WALL_MARGIN + x * DOT_GAP);
+        ctx.rect(dotX, dotY, dotSize, dotSize);
       }
       if (char === 'o') {
-        bigDot(margin + x * dotGap - 3, TOP_MARGIN + margin + y * dotGap - 3);
+        bigDot(dotX - 3, dotY - 3);
       }
-      if (DEBUG_DOTS && char === '#') {
-        ctx.fillStyle = 'red';
-        ctx.rect(margin + x * dotGap, TOP_MARGIN + margin + y * dotGap, dotSize, dotSize);
+      if (DEBUG_DOTS) {
+        ctx.fillStyle = char === '#' ? 'red' : 'green';
+        if (y === 19 && x === 11) ctx.fillStyle = 'yellow';
+        ctx.rect(dotX, dotY, dotSize, dotSize);
+        ctx.fill();
       }
-      // ctx.fill();
     });
   });
   ctx.fill();
 }
 
 export function drawBoard() {
-  // drawWalls();
   drawDots();
 }
