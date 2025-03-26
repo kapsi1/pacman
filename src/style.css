@@ -4,10 +4,19 @@ body {
   display: flex;
   justify-content: center;
 }
+
 img {
   image-rendering: pixelated;
+}
+
+#background {
   height: 100%;
 }
+
+#sprites {
+  display: none;
+}
+
 #gameCanvas {
   image-rendering: pixelated;
   /* border: 1px solid #3b3b3b; */
@@ -15,7 +24,14 @@ img {
   height: 100%;
   position: absolute;
 }
+
 #debug {
   font-family: monospace;
   color: #a3a3a3;
+  position: absolute;
+  top: -13px;
+  left: 0;
+  width: 200px;
+  height: 100px;
+  /* border: 1px solid gray; */
 }
