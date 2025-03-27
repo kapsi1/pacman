@@ -9,20 +9,37 @@ export enum Direction {
   Down = 'down',
 }
 
+const isHorizontalDirection = (direction: Direction) => direction === Direction.Left || direction === Direction.Right;
+const gridToPx = (gridX: number, gridY: number) => [
+  WALL_MARGIN + gridX * DOT_GAP,
+  TOP_MARGIN + WALL_MARGIN + gridY * DOT_GAP,
+];
+const pxToGrid = (pxX: number, pxY: number) => [
+  (pxX - WALL_MARGIN) / DOT_GAP,
+  (pxY - WALL_MARGIN - TOP_MARGIN) / DOT_GAP,
+];
+
 const debugEl = document.querySelector('#debug') as HTMLDivElement;
 // 3.5s na przejście dolnego rzędu - 202 px od pierwszej do ostatniej kropki
 // 1 s = 57,71 px
-// const PACMAN_SPEED = 5; // px/s
+// const PACMAN_SPEED = 1; // px/s
+const PACMAN_SPEED = 5; // px/s
 // const PACMAN_SPEED = 20; // px/s
-const PACMAN_SPEED = 57.71; // px/s
+// const PACMAN_SPEED = 57.71; // px/s
+// const PACMAN_SPEED = 60; // px/s
 let direction = Direction.Right;
+// let direction = Direction.Up;
 //position in dot grid
-let posY = 211;
+// let posY = 211;
 // let posX = 111;
-let posX = 150;
-// let posX = 162;
+// let posX = 150;
+// let posX = 160;
 // let posY = 187;
 // let posX = 99;
+// let [posX, posY] = gridToPx(20, 14);
+// let [posX, posY] = gridToPx(13, 22); //default
+let [posX, posY] = gridToPx(19, 13); //default
+posX -= 4;
 let pacmanFrame: Frame = 0;
 let pause = false;
 let lastTimestamp: number | null = null;
@@ -73,103 +90,132 @@ function tick(timestamp: number) {
   // debugEl.innerText = 'posX: ' + posX.toFixed(2) + '\nposY: ' + posY.toFixed(2);
   drawBoard();
   drawPacman(posX, posY, direction, pacmanFrame);
-
   requestAnimationFrame(tick);
 }
 // console.log(board);
-
-const isHorizontalDirection = (direction: Direction) => direction === Direction.Left || direction === Direction.Right;
 // Called when trying to change directions on Pacman.
 // Returns null if new direction is blocked, and if it's allowed,
 // returns the changed direction coordinate, snapped to grid.
-function newPos(x: number, y: number, direction: Direction, log = false) {
-  // let gridX = Math.round((Math.round(x) - WALL_MARGIN) / DOT_GAP);
-  // let gridY = Math.round((Math.round(y) - WALL_MARGIN - TOP_MARGIN) / DOT_GAP);
-  // let gridX = Math.round((x - WALL_MARGIN) / DOT_GAP);
-  // let gridY = Math.round((y - WALL_MARGIN - TOP_MARGIN) / DOT_GAP);
-  // let gridX = Math.floor((x - WALL_MARGIN) / DOT_GAP);
-  // let gridY = Math.floor((y - WALL_MARGIN - TOP_MARGIN) / DOT_GAP);
-  // let gridX = Math.ceil((x - WALL_MARGIN) / DOT_GAP);
-  // let gridY = Math.ceil((y - WALL_MARGIN - TOP_MARGIN) / DOT_GAP);
-  let gridX = (x - WALL_MARGIN) / DOT_GAP;
-  let gridY = (y - WALL_MARGIN - TOP_MARGIN) / DOT_GAP;
-  if (direction === Direction.Right) {
-    gridX = Math.floor(gridX);
-    gridY = Math.round(gridY);
-  } else if (direction === Direction.Left) {
-    gridX = Math.ceil(gridX);
-    gridY = Math.round(gridY);
-  } else if (direction === Direction.Down) {
-    gridY = Math.floor(gridY);
-    gridX = Math.round(gridX);
-  } else if (direction === Direction.Up) {
-    gridY = Math.ceil(gridY);
-    gridX = Math.round(gridX);
+function newPos(pxX: number, pxY: number, newDirection: Direction, log = false) {
+  const currentDirection = direction;
+  let [gridX, gridY] = pxToGrid(pxX, pxY);
+  if (log) {
+    console.group(currentDirection + ' -> ' + newDirection);
+    console.log('pxX', pxX.toFixed(2), 'gridX', gridX.toFixed(2), 'pxY', pxY.toFixed(2), 'gridY', gridY.toFixed(2));
+    if (log) {
+      console.log(
+        'round(gridX)',
+        Math.round(gridX),
+        'floor(gridX)',
+        Math.floor(gridX),
+        'ceil(gridX)',
+        Math.ceil(gridX)
+      );
+      console.log(
+        'round(gridY)',
+        Math.round(gridY),
+        'floor(gridY)',
+        Math.floor(gridY),
+        'ceil(gridY)',
+        Math.ceil(gridY)
+      );
+    }
   }
-  let nextX = gridX;
-  let nextY = gridY;
-  // console.log(
-  //   // 'direction',
-  //   // direction,
-  //   'x',
-  //   x,
-  //   // 'round',
-  //   // Math.round(x),
-  //   '-11',
-  //   x - WALL_MARGIN,
-  //   '/8',
-  //   (x - WALL_MARGIN) / DOT_GAP,
-  //   'gridX',
-  //   gridX,
-  //   'toPx',
-  //   gridX * DOT_GAP + WALL_MARGIN
-  // );
-  // console.log(
-  //   'y',
-  //   y,
-  //   'round',
-  //   Math.round(y),
-  //   '-35',
-  //   Math.round(y) - WALL_MARGIN - TOP_MARGIN,
-  //   '/8',
-  //   (Math.round(x) - WALL_MARGIN - TOP_MARGIN) / DOT_GAP,
-  //   'round',
-  //   gridY,
-  //   'toX',
-  //   TOP_MARGIN + WALL_MARGIN + gridY * DOT_GAP
-  // );
-  if (direction === Direction.Right) nextX++;
-  if (direction === Direction.Left) nextX--;
-  if (direction === Direction.Down) nextY++;
-  if (direction === Direction.Up) nextY--;
-  const nextCell = board[nextY] ? board[nextY][nextX] : undefined;
-  // console.log(`nextCell`, board[nextY][nextX], 'isAllowed', nextCell !== undefined && nextCell !== '#');
+  // if (newDirection === Direction.Right) {
+  if (isHorizontalDirection(newDirection)) {
+    if (currentDirection === Direction.Down) {
+      gridY = Math.ceil(gridY);
+      if (log) console.log('y ceil', gridY);
+    } else {
+      gridY = Math.floor(gridY);
+      if (log) console.log('y floor', gridY);
+    }
+    gridX = Math.ceil(gridX);
+    if (log) console.log('x ceil', gridX);
+    // if (log) {
+    //   console.log('floor(gridX)', Math.floor(gridX));
+    //   console.log('round(gridY)', Math.round(gridY));
+    // }
+    // gridX = Math.floor(gridX);
+    // gridY = Math.round(gridY);
+    // } else if (newDirection === Direction.Left) {
+    //   if (log) {
+    //     console.log('ceil(gridX)', Math.ceil(gridX));
+    //     console.log('round(gridY)', Math.round(gridY));
+    //   }
+    //   gridX = Math.ceil(gridX);
+    //   gridY = Math.round(gridY);
+    // } else if (newDirection === Direction.Down) {
+    //   if (log) {
+    //     console.log('round(gridX)', Math.round(gridX));
+    //     console.log('floor(gridY)', Math.floor(gridY));
+    //   }
+    //   gridX = Math.round(gridX);
+    //   gridY = Math.floor(gridY);
+    // } else if (newDirection === Direction.Up) {
+  } else {
+    // gridX = Math.round(gridX);
+    if (currentDirection === Direction.Right) {
+      gridX = Math.ceil(gridX);
+      if (log) console.log('x ceil', gridX);
+    } else {
+      gridX = Math.floor(gridX);
+      if (log) console.log('x floor', gridX);
+    }
+    gridY = Math.ceil(gridY);
+    if (log) console.log('y ceil', gridY);
+  }
+  let nextGridX = gridX;
+  let nextGridY = gridY;
+  if (newDirection === Direction.Right) nextGridX++;
+  if (newDirection === Direction.Left) nextGridX--;
+  if (newDirection === Direction.Down) nextGridY++;
+  if (newDirection === Direction.Up) nextGridY--;
+  const nextCell = board[nextGridY] ? board[nextGridY][nextGridX] : undefined;
+  if (log)
+    console.log(
+      'nextGridX',
+      nextGridX,
+      'nextGridY',
+      nextGridY,
+      'nextGridPx',
+      gridToPx(nextGridX, nextGridY),
+      'nextCell',
+      nextCell,
+      'isAllowed',
+      nextCell !== undefined && nextCell !== '#'
+    );
   debugEl.innerText =
     'direction: ' +
-    direction +
+    newDirection +
     '\nx: ' +
-    x.toFixed(2) +
+    pxX.toFixed(2) +
     '\ngridX: ' +
     gridX +
     '\nnextX: ' +
-    nextX +
+    nextGridX +
     '\ny: ' +
-    y.toFixed(2) +
+    pxY.toFixed(2) +
     '\ngridY: ' +
     gridY +
     '\nnextY: ' +
-    nextY +
+    nextGridY +
     '\nnextCell: ' +
     nextCell +
     '\nisAllowed: ' +
     (nextCell === undefined || nextCell === '#' ? 'false' : 'true');
+  if (log) {
+    (window as any).debugDot = [pxX, pxY];
+    console.groupEnd();
+  }
   if (nextCell === undefined || nextCell === '#') return null;
-  else if (isHorizontalDirection(direction)) return TOP_MARGIN + WALL_MARGIN + gridY * DOT_GAP;
+  else if (isHorizontalDirection(newDirection)) return TOP_MARGIN + WALL_MARGIN + gridY * DOT_GAP;
   else return gridX * DOT_GAP + WALL_MARGIN;
 }
 
 document.addEventListener('keydown', (event) => {
-  let pos;
+  let pos: number | null;
+  let log = true;
   switch (event.key) {
     case ' ':
       pause = !pause;
@@ -180,7 +226,7 @@ document.addEventListener('keydown', (event) => {
       break;
     case 'w':
       if (direction === Direction.Up) return;
-      pos = newPos(posX, posY, Direction.Up, true);
+      pos = newPos(posX, posY, Direction.Up, log);
       if (pos) {
         posX = pos;
         direction = Direction.Up;
@@ -189,7 +235,7 @@ document.addEventListener('keydown', (event) => {
       break;
     case 's':
       if (direction === Direction.Down) return;
-      pos = newPos(posX, posY, Direction.Down, true);
+      pos = newPos(posX, posY, Direction.Down, log);
       if (pos) {
         posX = pos;
         direction = Direction.Down;
@@ -198,7 +244,7 @@ document.addEventListener('keydown', (event) => {
       break;
     case 'd':
       if (direction === Direction.Right) return;
-      pos = newPos(posX, posY, Direction.Right, true);
+      pos = newPos(posX, posY, Direction.Right, log);
       if (pos) {
         posY = pos;
         direction = Direction.Right;
@@ -207,7 +253,7 @@ document.addEventListener('keydown', (event) => {
       break;
     case 'a':
       if (direction === Direction.Left) return;
-      pos = newPos(posX, posY, Direction.Left, true);
+      pos = newPos(posX, posY, Direction.Left, log);
       if (pos) {
         posY = pos;
         direction = Direction.Left;

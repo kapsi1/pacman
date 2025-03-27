@@ -1,8 +1,8 @@
 import { ctx } from './canvas';
 import { Direction } from './main';
 
-const DEBUG_PACMAN = true;
 // const DEBUG_PACMAN = false;
+const DEBUG_PACMAN = true;
 
 // state of Pacman's mouth
 // open, half, closed
@@ -33,7 +33,7 @@ export function drawPacman(x: number, y: number, direction: Direction, frame: Fr
   x = Math.round(x - pacmanSpriteSize / 2) + 1;
   // drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, destinationX, destinationY, destinationWidth, destinationHeight)
   if (DEBUG_PACMAN) {
-    ctx.fillStyle = 'red';
+    ctx.fillStyle = 'yellow';
     ctx.fillRect(dotX, dotY, 2, 2);
   } else {
     ctx.drawImage(sprites, srcX, srcY, pacmanSpriteSize, pacmanSpriteSize, x, y, pacmanSpriteSize, pacmanSpriteSize);

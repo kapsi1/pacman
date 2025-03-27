@@ -4,11 +4,43 @@ export const WALL_MARGIN = 11; // distance from wall
 export const DOT_GAP = 8;
 
 // const DEBUG_DOTS = true;
-// const DRAW_GRID = true;
 const DEBUG_DOTS = false;
-const DRAW_GRID = false;
+const DEBUG_GRID = true;
+// const DRAW_GRID = false;
+ctx.font = '4px monospace';
 
 // game board is 26 tiles wide and 29 tiles high
+// const boardS = `
+// ............##............
+// .####.#####.##.#####.####.
+// o#  #.#   #.##.#   #.#  #o
+// .####.#####.##.#####.####.
+// ..........................
+// .####.##.########.##.####.
+// .####.##.########.##.####.
+// ......##....##....##......
+// #####.##### ## #####.#####
+//     #.##### ## #####.#
+//     #.##          ##.#
+//     #.## ######## ##.#
+// #####.## #      # ##.#####
+//      .   #      #   .
+// #####.## #      # ##.#####
+//     #.## ######## ##.#
+//     #.##          ##.#
+//     #.## ######## ##.#
+// #####.## ######## ##.#####
+// ............##............
+// .####.#####.##.#####.####.
+// .####.#####.##.#####.####.
+// o..##.......  .......##..o
+// ##.##.##.########.##.##.##
+// ##.##.##.########.##.##.##
+// ......##....##....##......
+// .##########.##.##########.
+// .##########.##.##########.
+// ..........................
+// `;
 const boardS = `
 ............##............
 .####.#####.##.#####.####.
@@ -83,13 +115,23 @@ function drawDots() {
         ctx.rect(dotX, dotY, dotSize, dotSize);
         ctx.fill();
       }
-      if (DRAW_GRID) {
-        ctx.lineWidth = 0.5;
+      if (DEBUG_GRID) {
+        ctx.lineWidth = 0.1;
         ctx.strokeStyle = 'gray';
         ctx.strokeRect(dotX, dotY, DOT_GAP, DOT_GAP);
+        ctx.fillStyle = char === '#' ? '#ba000045' : '#00a3184a';
+        ctx.fillRect(dotX, dotY, DOT_GAP, DOT_GAP);
+        if (x === 0) ctx.fillText(y.toString(), dotX + 4, dotY + 4);
+        if (y === board.length - 1) ctx.fillText(x.toString(), dotX + 4, dotY + 4);
       }
     });
   });
+  if ((window as any).debugDot) {
+    ctx.fillStyle = 'red';
+    ctx.beginPath();
+    ctx.fillRect((window as any).debugDot[0], (window as any).debugDot[1], 2, 2);
+    ctx.fill();
+  }
   ctx.fill();
 }
 
