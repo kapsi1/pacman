@@ -92,6 +92,10 @@ function tick(timestamp: number) {
   drawPacman(posX, posY, direction, pacmanFrame);
   requestAnimationFrame(tick);
 }
+const isCellAllowed = (gridX: number, gridY: number, log = false) => {
+  if (log) console.log('isCellAllowed', gridX, gridY, board[gridY] ? board[gridY][gridX] !== '#' : false);
+  return board[gridY] ? board[gridY][gridX] !== '#' : false;
+};
 // console.log(board);
 // Called when trying to change directions on Pacman.
 // Returns null if new direction is blocked, and if it's allowed,
@@ -99,18 +103,15 @@ function tick(timestamp: number) {
 function newPos(pxX: number, pxY: number, newDirection: Direction, log = false) {
   const currentDirection = direction;
   let [gridX, gridY] = pxToGrid(pxX, pxY);
+  let newGridX = gridX;
+  let newGridY = gridY;
   if (log) {
     console.group(currentDirection + ' -> ' + newDirection);
     console.log('pxX', pxX.toFixed(2), 'gridX', gridX.toFixed(2), 'pxY', pxY.toFixed(2), 'gridY', gridY.toFixed(2));
-    if (log) {
-      console.log(
-        'round(gridX)',
-        Math.round(gridX),
-        'floor(gridX)',
-        Math.floor(gridX),
-        'ceil(gridX)',
-        Math.ceil(gridX)
-      );
+  }
+  // if (newDirection === Direction.Right) {
+  if (isHorizontalDirection(newDirection)) {
+    if (log)
       console.log(
         'round(gridY)',
         Math.round(gridY),
@@ -119,19 +120,23 @@ function newPos(pxX: number, pxY: number, newDirection: Direction, log = false) 
         'ceil(gridY)',
         Math.ceil(gridY)
       );
-    }
-  }
-  // if (newDirection === Direction.Right) {
-  if (isHorizontalDirection(newDirection)) {
     if (currentDirection === Direction.Down) {
-      gridY = Math.ceil(gridY);
-      if (log) console.log('y ceil', gridY);
-    } else {
+      // gridY = Math.ceil(gridY);
+      // if (log) console.log('y ceil', gridY);
       gridY = Math.floor(gridY);
       if (log) console.log('y floor', gridY);
+      // gridY = Math.round(gridY);
+      // if (log) console.log('y round', gridY);
+    } else {
+      // gridY = Math.floor(gridY);
+      // if (log) console.log('y floor', gridY);
+      gridY = Math.ceil(gridY);
+      if (log) console.log('y ceil', gridY);
+      // gridY = Math.round(gridY);
+      // if (log) console.log('y round', gridY);
     }
     gridX = Math.ceil(gridX);
-    if (log) console.log('x ceil', gridX);
+    // if (log) console.log('x ceil', gridX);
     // if (log) {
     //   console.log('floor(gridX)', Math.floor(gridX));
     //   console.log('round(gridY)', Math.round(gridY));
@@ -154,6 +159,15 @@ function newPos(pxX: number, pxY: number, newDirection: Direction, log = false) 
     //   gridY = Math.floor(gridY);
     // } else if (newDirection === Direction.Up) {
   } else {
+    if (log)
+      console.log(
+        'round(gridX)',
+        Math.round(gridX),
+        'floor(gridX)',
+        Math.floor(gridX),
+        'ceil(gridX)',
+        Math.ceil(gridX)
+      );
     // gridX = Math.round(gridX);
     if (currentDirection === Direction.Right) {
       gridX = Math.ceil(gridX);
@@ -163,27 +177,34 @@ function newPos(pxX: number, pxY: number, newDirection: Direction, log = false) 
       if (log) console.log('x floor', gridX);
     }
     gridY = Math.ceil(gridY);
-    if (log) console.log('y ceil', gridY);
+    // if (log) console.log('y ceil', gridY);
   }
-  let nextGridX = gridX;
-  let nextGridY = gridY;
-  if (newDirection === Direction.Right) nextGridX++;
-  if (newDirection === Direction.Left) nextGridX--;
-  if (newDirection === Direction.Down) nextGridY++;
-  if (newDirection === Direction.Up) nextGridY--;
-  const nextCell = board[nextGridY] ? board[nextGridY][nextGridX] : undefined;
+  newGridX = gridX;
+  newGridY = gridY;
+  if (newDirection === Direction.Right) {
+    newGridX++;
+    if (!isCellAllowed(newGridX, newGridY - 1, log)) newGridY++;
+  }
+  if (newDirection === Direction.Left) {
+    newGridX--;
+    if (!isCellAllowed(newGridX, newGridY - 1, log)) newGridY++;
+  }
+  if (newDirection === Direction.Down) {
+    newGridY++;
+    // if (!isCellAllowed(newGridX - 1, newGridY, log)) newGridY++;
+  }
+  if (newDirection === Direction.Up) {
+    newGridY--;
+    // if (!isCellAllowed(newGridX - 1, newGridY, log)) newGridY++;
+  }
+  const nextCell = board[newGridY] ? board[newGridY][newGridX] : undefined;
   if (log)
     console.log(
-      'nextGridX',
-      nextGridX,
-      'nextGridY',
-      nextGridY,
-      'nextGridPx',
-      gridToPx(nextGridX, nextGridY),
+      'grid [' + gridX + ', ' + gridY + '] -> [' + newGridX + ', ' + newGridY + ']',
       'nextCell',
       nextCell,
       'isAllowed',
-      nextCell !== undefined && nextCell !== '#'
+      isCellAllowed(newGridX, newGridY)
     );
   debugEl.innerText =
     'direction: ' +
@@ -193,24 +214,27 @@ function newPos(pxX: number, pxY: number, newDirection: Direction, log = false) 
     '\ngridX: ' +
     gridX +
     '\nnextX: ' +
-    nextGridX +
+    newGridX +
     '\ny: ' +
     pxY.toFixed(2) +
     '\ngridY: ' +
     gridY +
     '\nnextY: ' +
-    nextGridY +
+    newGridY +
     '\nnextCell: ' +
     nextCell +
     '\nisAllowed: ' +
-    (nextCell === undefined || nextCell === '#' ? 'false' : 'true');
+    isCellAllowed(newGridX, newGridY);
   if (log) {
     (window as any).debugDot = [pxX, pxY];
     console.groupEnd();
   }
-  if (nextCell === undefined || nextCell === '#') return null;
-  else if (isHorizontalDirection(newDirection)) return TOP_MARGIN + WALL_MARGIN + gridY * DOT_GAP;
-  else return gridX * DOT_GAP + WALL_MARGIN;
+  if (!isCellAllowed(newGridX, newGridY)) return null;
+  // else if (isHorizontalDirection(newDirection)) return TOP_MARGIN + WALL_MARGIN + gridY * DOT_GAP;
+  // else return gridX * DOT_GAP + WALL_MARGIN;
+  // snap to grid
+  else if (isHorizontalDirection(newDirection)) return gridToPx(0, newGridY)[1];
+  else return gridToPx(newGridX, 0)[0];
 }
 
 document.addEventListener('keydown', (event) => {

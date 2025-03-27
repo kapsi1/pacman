@@ -26,6 +26,7 @@ img {
 }
 
 #debug {
+  display: none;
   font-family: monospace;
   color: #a3a3a3;
   position: absolute;

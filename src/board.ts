@@ -6,7 +6,7 @@ export const DOT_GAP = 8;
 // const DEBUG_DOTS = true;
 const DEBUG_DOTS = false;
 const DEBUG_GRID = true;
-// const DRAW_GRID = false;
+// const DEBUG_GRID = false;
 ctx.font = '4px monospace';
 
 // game board is 26 tiles wide and 29 tiles high
@@ -43,24 +43,24 @@ ctx.font = '4px monospace';
 // `;
 const boardS = `
 ............##............
-.####.#####.##.#####.####.
-o#  #.#   #.##.#   #.#  #o
-.####.#####.##.#####.####.
+.### .#####.##.#####.####.
+o### .#   #.##.#   #.#  #o
+.    .#####.##.#####.####.
 ..........................
-.####.##.########.##.####.
-.####.##.########.##.####.
-......##....##....##......
-#####.##### ## #####.#####
-    #.##### ## #####.#    
-    #.##          ##.#    
-    #.## ######## ##.#    
-#####.## #      # ##.#####
-     .   #      #   .     
-#####.## #      # ##.#####
-    #.## ######## ##.#    
-    #.##          ##.#    
-    #.## ######## ##.#    
-#####.## ######## ##.#####
+.####.##.########.# .####.
+.####.##.########.# .####.
+......##....##....# ......
+#####.##### ## #### .#####
+    #.##### ##    # .#    
+    #.##          # .#    
+    #.## #######  # .#    
+#####.## #     #    .#####
+     .   #     #    .     
+#####.## #     #  # .#####
+    #.## #######  # .#    
+    #.##          # .#    
+    #.## ######## # .#    
+#####.## ######## # .#####
 ............##............
 .####.#####.##.#####.####.
 .####.#####.##.#####.####.
@@ -83,7 +83,7 @@ export const board = boardS.split('\n');
 board.pop();
 board.shift();
 
-function bigDot(x: number, y: number) {
+function coin(x: number, y: number) {
   // 8 x 8
   ctx.rect(x + 2, y, 4, 8);
   ctx.rect(x + 1, y + 1, 6, 6);
@@ -108,7 +108,7 @@ function drawDots() {
         ctx.rect(dotX, dotY, dotSize, dotSize);
       }
       if (char === 'o') {
-        bigDot(dotX - 3, dotY - 3);
+        coin(dotX - 3, dotY - 3);
       }
       if (DEBUG_DOTS) {
         ctx.fillStyle = char === '#' ? 'red' : 'green';
@@ -121,6 +121,7 @@ function drawDots() {
         ctx.strokeRect(dotX, dotY, DOT_GAP, DOT_GAP);
         ctx.fillStyle = char === '#' ? '#ba000045' : '#00a3184a';
         ctx.fillRect(dotX, dotY, DOT_GAP, DOT_GAP);
+        ctx.fillStyle = 'white';
         if (x === 0) ctx.fillText(y.toString(), dotX + 4, dotY + 4);
         if (y === board.length - 1) ctx.fillText(x.toString(), dotX + 4, dotY + 4);
       }
