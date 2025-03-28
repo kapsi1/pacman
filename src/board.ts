@@ -20,15 +20,15 @@ o#  #.#   #.##.#   #.#  #o
 .####.##.########.##.####.
 ......##....##....##......
 #####.##### ## #####.#####
-    #.##### ## #####.#
-    #.##          ##.#
-    #.## ######## ##.#
+    #.##### ## #####.#    
+    #.##          ##.#    
+    #.## ######## ##.#    
 #####.## #      # ##.#####
-     .   #      #   .
+     .   #      #   .     
 #####.## #      # ##.#####
-    #.## ######## ##.#
-    #.##          ##.#
-    #.## ######## ##.#
+    #.## ######## ##.#    
+    #.##          ##.#    
+    #.## ######## ##.#    
 #####.## ######## ##.#####
 ............##............
 .####.#####.##.#####.####.
@@ -119,18 +119,32 @@ function drawDots() {
         ctx.fillStyle = char === '#' ? '#ba000045' : '#00a3184a';
         ctx.fillRect(dotX, dotY, DOT_GAP, DOT_GAP);
         ctx.fillStyle = 'white';
-        if (x === 0) ctx.fillText(y.toString(), dotX + 4, dotY + 4);
-        if (y === board.length - 1 && x > 0) ctx.fillText(x.toString(), dotX + 4, dotY + 4);
+        if (x === 0 || x === row.length - 1) ctx.fillText(y.toString(), dotX + 4, dotY + 4);
+        if (x > 0 && (y === board.length - 1 || y === 0)) ctx.fillText(x.toString(), dotX + 4, dotY + 4);
       }
     });
   });
+  ctx.fill();
   if ((window as any).debugDot) {
     ctx.fillStyle = 'red';
     ctx.beginPath();
-    ctx.fillRect((window as any).debugDot[0], (window as any).debugDot[1], 2, 2);
+    ctx.rect((window as any).debugDot[0], (window as any).debugDot[1], 2, 2);
     ctx.fill();
   }
-  ctx.fill();
+  if ((window as any).currentCell) {
+    const c = (window as any).currentCell;
+    ctx.fillStyle = 'blue';
+    ctx.beginPath();
+    ctx.rect(c[0], c[1], DOT_GAP, DOT_GAP);
+    ctx.fill();
+  }
+  if ((window as any).nextCell) {
+    const c = (window as any).nextCell;
+    ctx.fillStyle = 'gray';
+    ctx.beginPath();
+    ctx.rect(c[0], c[1], DOT_GAP, DOT_GAP);
+    ctx.fill();
+  }
 }
 
 export function drawBoard() {

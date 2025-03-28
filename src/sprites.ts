@@ -35,7 +35,7 @@ export function drawPacman(x: number, y: number, direction: Direction, frame: Fr
   if (DEBUG_PACMAN) {
     ctx.fillStyle = 'yellow';
     ctx.fillRect(dotX, dotY, 2, 2);
-    ctx.globalAlpha = 0.25;
+    ctx.globalAlpha = 0.1;
     ctx.drawImage(sprites, srcX, srcY, pacmanSpriteSize, pacmanSpriteSize, x, y, pacmanSpriteSize, pacmanSpriteSize);
     ctx.globalAlpha = 1;
   } else {
