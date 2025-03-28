@@ -11,6 +11,9 @@ img {
 
 #background {
   height: 100%;
+  /* height: 149%;
+  margin-left: 17px;
+  margin-top: 4px; */
 }
 
 #sprites {
@@ -18,15 +21,16 @@ img {
 }
 
 #gameCanvas {
-  image-rendering: pixelated;
   /* border: 1px solid #3b3b3b; */
+  image-rendering: pixelated;
   object-fit: contain;
-  height: 100%;
   position: absolute;
+  height: 100%;
+  /* width: 100%; */
 }
 
 #debug {
-  display: none;
+  /* display: none; */
   font-family: monospace;
   color: #a3a3a3;
   position: absolute;

@@ -27,7 +27,7 @@ const PACMAN_SPEED = 5; // px/s
 // const PACMAN_SPEED = 20; // px/s
 // const PACMAN_SPEED = 57.71; // px/s
 // const PACMAN_SPEED = 60; // px/s
-let direction = Direction.Right;
+let direction = Direction.Down;
 // let direction = Direction.Up;
 //position in dot grid
 // let posY = 211;
@@ -37,9 +37,9 @@ let direction = Direction.Right;
 // let posY = 187;
 // let posX = 99;
 // let [posX, posY] = gridToPx(20, 14);
-// let [posX, posY] = gridToPx(13, 22); //default
-let [posX, posY] = gridToPx(19, 13); //default
-posX -= 4;
+// let [posX, posY] = gridToPx(13, 22); // default
+// posX -= 4; // center default position
+let [posX, posY] = gridToPx(17, 10);
 let pacmanFrame: Frame = 0;
 let pause = false;
 let lastTimestamp: number | null = null;
@@ -63,7 +63,7 @@ function tick(timestamp: number) {
   if (direction === Direction.Down) newY += deltaPx;
   if (direction === Direction.Up) newY -= deltaPx;
 
-  const pos = newPos(newX!, newY!, direction);
+  const pos = getNewPos(newX!, newY!, direction);
   if (pos) {
     //   if (direction === Direction.Up || direction === Direction.Down) posX = pos;
     //   else posY = pos;
@@ -96,18 +96,18 @@ const isCellAllowed = (gridX: number, gridY: number, log = false) => {
   if (log) console.log('isCellAllowed', gridX, gridY, board[gridY] ? board[gridY][gridX] !== '#' : false);
   return board[gridY] ? board[gridY][gridX] !== '#' : false;
 };
-// console.log(board);
 // Called when trying to change directions on Pacman.
-// Returns null if new direction is blocked, and if it's allowed,
-// returns the changed direction coordinate, snapped to grid.
-function newPos(pxX: number, pxY: number, newDirection: Direction, log = false) {
+// Returns null if new direction is blocked,
+// otherwise returns a coordinate (x if going vertical, y if horizontal), snapped to grid.
+function getNewPos(pxX: number, pxY: number, newDirection: Direction, log = false) {
   const currentDirection = direction;
   let [gridX, gridY] = pxToGrid(pxX, pxY);
   let newGridX = gridX;
   let newGridY = gridY;
   if (log) {
     console.group(currentDirection + ' -> ' + newDirection);
-    console.log('pxX', pxX.toFixed(2), 'gridX', gridX.toFixed(2), 'pxY', pxY.toFixed(2), 'gridY', gridY.toFixed(2));
+    // console.log('pxX', pxX.toFixed(2), 'gridX', gridX.toFixed(2), 'pxY', pxY.toFixed(2), 'gridY', gridY.toFixed(2));
+    console.log('pxX', pxX, 'gridX', gridX, 'pxY', pxY, 'gridY', gridY);
   }
   // if (newDirection === Direction.Right) {
   if (isHorizontalDirection(newDirection)) {
@@ -128,10 +128,10 @@ function newPos(pxX: number, pxY: number, newDirection: Direction, log = false) 
       // gridY = Math.round(gridY);
       // if (log) console.log('y round', gridY);
     } else {
-      // gridY = Math.floor(gridY);
-      // if (log) console.log('y floor', gridY);
-      gridY = Math.ceil(gridY);
-      if (log) console.log('y ceil', gridY);
+      gridY = Math.floor(gridY);
+      if (log) console.log('y floor', gridY);
+      // gridY = Math.ceil(gridY);
+      // if (log) console.log('y ceil', gridY);
       // gridY = Math.round(gridY);
       // if (log) console.log('y round', gridY);
     }
@@ -170,8 +170,10 @@ function newPos(pxX: number, pxY: number, newDirection: Direction, log = false) 
       );
     // gridX = Math.round(gridX);
     if (currentDirection === Direction.Right) {
-      gridX = Math.ceil(gridX);
-      if (log) console.log('x ceil', gridX);
+      // gridX = Math.ceil(gridX);
+      // if (log) console.log('x ceil', gridX);
+      gridX = Math.floor(gridX);
+      if (log) console.log('x floor', gridX);
     } else {
       gridX = Math.floor(gridX);
       if (log) console.log('x floor', gridX);
@@ -179,23 +181,24 @@ function newPos(pxX: number, pxY: number, newDirection: Direction, log = false) 
     gridY = Math.ceil(gridY);
     // if (log) console.log('y ceil', gridY);
   }
+
   newGridX = gridX;
   newGridY = gridY;
   if (newDirection === Direction.Right) {
     newGridX++;
-    if (!isCellAllowed(newGridX, newGridY - 1, log)) newGridY++;
+    if (!isCellAllowed(newGridX, newGridY, log)) newGridY++;
   }
   if (newDirection === Direction.Left) {
     newGridX--;
-    if (!isCellAllowed(newGridX, newGridY - 1, log)) newGridY++;
+    if (!isCellAllowed(newGridX, newGridY, log)) newGridY++;
   }
   if (newDirection === Direction.Down) {
     newGridY++;
-    // if (!isCellAllowed(newGridX - 1, newGridY, log)) newGridY++;
+    if (!isCellAllowed(newGridX, newGridY, log)) newGridX++;
   }
   if (newDirection === Direction.Up) {
     newGridY--;
-    // if (!isCellAllowed(newGridX - 1, newGridY, log)) newGridY++;
+    if (!isCellAllowed(newGridX, newGridY, log)) newGridX++;
   }
   const nextCell = board[newGridY] ? board[newGridY][newGridX] : undefined;
   if (log)
@@ -210,13 +213,13 @@ function newPos(pxX: number, pxY: number, newDirection: Direction, log = false) 
     'direction: ' +
     newDirection +
     '\nx: ' +
-    pxX.toFixed(2) +
+    pxX +
     '\ngridX: ' +
     gridX +
     '\nnextX: ' +
     newGridX +
     '\ny: ' +
-    pxY.toFixed(2) +
+    pxY +
     '\ngridY: ' +
     gridY +
     '\nnextY: ' +
@@ -238,9 +241,10 @@ function newPos(pxX: number, pxY: number, newDirection: Direction, log = false) 
 }
 
 document.addEventListener('keydown', (event) => {
-  let pos: number | null;
+  let newPos: number | null;
   let log = true;
   switch (event.key) {
+    case '`':
     case ' ':
       pause = !pause;
       if (!pause) {
@@ -250,36 +254,36 @@ document.addEventListener('keydown', (event) => {
       break;
     case 'w':
       if (direction === Direction.Up) return;
-      pos = newPos(posX, posY, Direction.Up, log);
-      if (pos) {
-        posX = pos;
+      newPos = getNewPos(posX, posY, Direction.Up, log);
+      if (newPos) {
+        posX = newPos;
         direction = Direction.Up;
       }
       // direction = Direction.Up;
       break;
     case 's':
       if (direction === Direction.Down) return;
-      pos = newPos(posX, posY, Direction.Down, log);
-      if (pos) {
-        posX = pos;
+      newPos = getNewPos(posX, posY, Direction.Down, log);
+      if (newPos) {
+        posX = newPos;
         direction = Direction.Down;
       }
       // direction = Direction.Down;
       break;
     case 'd':
       if (direction === Direction.Right) return;
-      pos = newPos(posX, posY, Direction.Right, log);
-      if (pos) {
-        posY = pos;
+      newPos = getNewPos(posX, posY, Direction.Right, log);
+      if (newPos) {
+        posY = newPos;
         direction = Direction.Right;
       }
       // direction = Direction.Right;
       break;
     case 'a':
       if (direction === Direction.Left) return;
-      pos = newPos(posX, posY, Direction.Left, log);
-      if (pos) {
-        posY = pos;
+      newPos = getNewPos(posX, posY, Direction.Left, log);
+      if (newPos) {
+        posY = newPos;
         direction = Direction.Left;
       }
       // direction = Direction.Left;
