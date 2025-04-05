@@ -15,8 +15,8 @@ const gridToPx = (gridX: number, gridY: number) => [
   TOP_MARGIN + WALL_MARGIN + gridY * DOT_GAP,
 ];
 const pxToGrid = (pxX: number, pxY: number) => [
-  (pxX - WALL_MARGIN) / DOT_GAP,
-  (pxY - WALL_MARGIN - TOP_MARGIN) / DOT_GAP,
+  Math.floor((pxX - WALL_MARGIN) / DOT_GAP),
+  Math.floor((pxY - WALL_MARGIN - TOP_MARGIN) / DOT_GAP),
 ];
 // get coordinates of top left corner of the cell containing the point
 const pxToCell = (pxX: number, pxY: number) => {
@@ -32,8 +32,8 @@ const PACMAN_SPEED = 5; // px/s
 // const PACMAN_SPEED = 20; // px/s
 // const PACMAN_SPEED = 57.71; // px/s
 // const PACMAN_SPEED = 60; // px/s
-let direction = Direction.Down;
 // let direction = Direction.Up;
+let direction = Direction.Down;
 //position in dot grid
 // let posY = 211;
 // let posX = 111;
@@ -68,10 +68,17 @@ function tick(timestamp: number) {
   if (direction === Direction.Down) newY += deltaPx;
   if (direction === Direction.Up) newY -= deltaPx;
 
-  const nextPos = getNewPos(newX!, newY!, direction);
-  if (nextPos) {
+  // const nextPos = getNewPos(newX, newY);
+  // const nextPos = getNewPos(newX, newY, undefined, true);
+
+  // if (nextPos) {
+  let [newXGrid, newYGrid] = pxToGrid(newX, newY);
+
+  if (isCellAllowed(newXGrid, newYGrid)) {
+    // console.log('set posX', posX, 'posY', posY);
     posX = newX;
     posY = newY;
+    (window as any).currentCell = pxToCell(posX, posY);
   }
 
   // change animation frame every 60 ms
@@ -86,182 +93,176 @@ function tick(timestamp: number) {
   drawPacman(posX, posY, direction, pacmanFrame);
   requestAnimationFrame(tick);
 }
-const isCellAllowed = (gridX: number, gridY: number, log = false) => {
-  if (log) console.log('isCellAllowed', gridX, gridY, board[gridY] ? board[gridY][gridX] !== '#' : false);
-  return board[gridY] ? board[gridY][gridX] !== '#' : false;
+// const isCellAllowed = (gridX: number, gridY: number, direction?: Direction, log = false) => {
+const isCellAllowed = (gridX: number, gridY: number, direction?: Direction, log = true) => {
+  if (log)
+    console.log(
+      'isCellAllowed y',
+      gridY,
+      'x',
+      gridX,
+      'direction',
+      direction,
+      // 'board',
+      // board,
+      // `board[${gridY}]`,
+      // board[gridY],
+      `(${gridX}, ${gridY}) '` +
+        board[gridY][gridX] +
+        `', (${gridX}, ${gridY - 1}) '` +
+        board[gridY - 1][gridX] +
+        `', (${gridX}, ${gridY - 2}) '` +
+        board[gridY - 2][gridX] +
+        "'",
+      // `\n(${gridX}, ${gridY}) !== '#' && (${gridX}, ${gridY - 1}) !== '#')`,
+      // board[gridY][gridX] !== '#' && board[gridY - 1][gridX] !== '#',
+      // `\n(${gridX}, ${gridY}) !== '#' && (${gridX}, ${gridY - 1}) === '#')`,
+      // board[gridY][gridX] !== '#' && board[gridY - 1][gridX] === '#',
+      '\nreturn',
+      (board[gridY][gridX] !== '#' && board[gridY - 1][gridX] !== '#') ||
+        (board[gridY][gridX] === '#' && board[gridY - 1][gridX] === '#' && board[gridY - 2][gridX] !== '#')
+    );
+  if (!board[gridY]) return false;
+  // if (direction === undefined || direction === Direction.Right || direction === Direction.Down)
+  //   return board[gridY][gridX] !== '#';
+  // if (direction === Direction.Right || direction === Direction.Down) return board[gridY][gridX] !== '#';
+  // else if (direction === Direction.Left) return board[gridX][gridY] !== '#' && board[gridX][gridY - 1] !== '#';
+  // else {
+  return (
+    // (board[gridY][gridX] !== '#' && board[gridY - 1][gridX] !== '#') ||
+    board[gridY][gridX] !== '#' ||
+    (board[gridY][gridX] === '#' && board[gridY - 1][gridX] === '#' && board[gridY - 2][gridX] !== '#')
+  );
+  // }
 };
-const isSideCellAllowed = (gridX: number, gridY: number, direction: Direction) => {
-  console.log('isSideCellAllowed 1', direction, gridX, gridY);
+const getNextCell = (gridX: number, gridY: number, direction: Direction, log = false) => {
+  // if (log) console.log('getNextCell 1', direction, gridX, gridY);
   if (direction === Direction.Down) gridY++;
   else if (direction === Direction.Up) gridY--;
   else if (direction === Direction.Left) gridX--;
   else if (direction === Direction.Right) gridX++;
-  console.log('isSideCellAllowed 2', gridX, gridY);
-  return isCellAllowed(gridX, gridY);
+  // if (log) console.log('getNextCell 2', gridX, gridY);
+  return [gridX, gridY];
 };
 // Called when trying to change directions on Pacman.
 // Returns null if new direction is blocked,
 // otherwise returns a coordinate (x if going vertical, y if horizontal), snapped to grid.
-function getNewPos(pxX: number, pxY: number, newDirection: Direction, log = false) {
+function getNewPos(newX: number, newY: number, newDirection?: Direction, log = false) {
   const currentDirection = direction;
-  let [gridX, gridY] = pxToGrid(pxX, pxY);
-  let newGridX = gridX;
-  let newGridY = gridY;
+  let [gridX, gridY] = pxToGrid(newX, newY);
+
   if (log) {
-    console.group(currentDirection + ' -> ' + newDirection);
-    // console.log('pxX', pxX.toFixed(2), 'gridX', gridX.toFixed(2), 'pxY', pxY.toFixed(2), 'gridY', gridY.toFixed(2));
-    console.log('pxX', pxX, 'gridX', gridX, 'pxY', pxY, 'gridY', gridY);
-  }
-  // if (newDirection === Direction.Right) {
-  if (isHorizontalDirection(newDirection)) {
-    if (log)
-      console.log(
-        'round(gridY)',
-        Math.round(gridY),
-        'floor(gridY)',
-        Math.floor(gridY),
-        'ceil(gridY)',
-        Math.ceil(gridY)
-      );
-    if (currentDirection === Direction.Down) {
-      // gridY = Math.ceil(gridY);
-      // if (log) console.log('y ceil', gridY);
-      gridY = Math.floor(gridY);
-      if (log) console.log('y floor', gridY);
-      // gridY = Math.round(gridY);
-      // if (log) console.log('y round', gridY);
-    } else {
-      gridY = Math.floor(gridY);
-      if (log) console.log('y floor', gridY);
-      // gridY = Math.ceil(gridY);
-      // if (log) console.log('y ceil', gridY);
-      // gridY = Math.round(gridY);
-      // if (log) console.log('y round', gridY);
-    }
-    // gridX = Math.ceil(gridX);
-    gridX = Math.floor(gridX);
-    // if (log) console.log('x ceil', gridX);
-    // if (log) {
-    //   console.log('floor(gridX)', Math.floor(gridX));
-    //   console.log('round(gridY)', Math.round(gridY));
-    // }
-    // gridX = Math.floor(gridX);
-    // gridY = Math.round(gridY);
-    // } else if (newDirection === Direction.Left) {
-    //   if (log) {
-    //     console.log('ceil(gridX)', Math.ceil(gridX));
-    //     console.log('round(gridY)', Math.round(gridY));
-    //   }
-    //   gridX = Math.ceil(gridX);
-    //   gridY = Math.round(gridY);
-    // } else if (newDirection === Direction.Down) {
-    //   if (log) {
-    //     console.log('round(gridX)', Math.round(gridX));
-    //     console.log('floor(gridY)', Math.floor(gridY));
-    //   }
-    //   gridX = Math.round(gridX);
-    //   gridY = Math.floor(gridY);
-    // } else if (newDirection === Direction.Up) {
-  } else {
-    if (log)
-      console.log(
-        'round(gridX)',
-        Math.round(gridX),
-        'floor(gridX)',
-        Math.floor(gridX),
-        'ceil(gridX)',
-        Math.ceil(gridX)
-      );
-    // gridX = Math.round(gridX);
-    if (currentDirection === Direction.Right) {
-      // gridX = Math.ceil(gridX);
-      // if (log) console.log('x ceil', gridX);
-      gridX = Math.floor(gridX);
-      if (log) console.log('x floor', gridX);
-    } else {
-      gridX = Math.floor(gridX);
-      if (log) console.log('x floor', gridX);
-    }
-    gridY = Math.floor(gridY);
-    // if (log) console.log('y ceil', gridY);
+    // console.group('getNewPos ' + currentDirection + ' -> ' + newDirection);
+    console.groupCollapsed('getNewPos ' + currentDirection + ' -> ' + newDirection);
+    console.log(
+      'posX',
+      posX,
+      'posY',
+      posY,
+      '\nnewX',
+      newX,
+      'gridX',
+      gridX,
+      'floor',
+      Math.floor(gridX),
+      '\nnewY',
+      newY,
+      'gridY',
+      gridY,
+      'floor',
+      Math.floor(gridY)
+    );
   }
 
-  newGridX = gridX;
-  newGridY = gridY;
-  if (newDirection === Direction.Right) {
-    newGridX++;
-    // if (!isCellAllowed(newGridX, newGridY, log)) newGridY++;
-  }
-  if (newDirection === Direction.Left) {
-    newGridX--;
-    // if (!isCellAllowed(newGridX, newGridY, log)) newGridY++;
-  }
-  if (newDirection === Direction.Down) {
-    newGridY++;
-    // if (!isCellAllowed(newGridX, newGridY, log)) newGridX++;
-  }
-  if (newDirection === Direction.Up) {
-    newGridY--;
-    // if (!isCellAllowed(newGridX, newGridY, log)) newGridX++;
-  }
-  const sideCell = board[newGridY] ? board[newGridY][newGridX] : undefined;
+  gridX = Math.floor(gridX);
+  gridY = Math.floor(gridY);
+
+  // let newGridX = gridX;
+  // let newGridY = gridY;
+
+  // if (newDirection === Direction.Right) {
+  //   // gridX++;
+  //   if (!isCellAllowed(gridX, gridY, log)) gridY++;
+  // } else if (newDirection === Direction.Left) {
+  //   // gridX--;
+  //   if (!isCellAllowed(gridX, gridY, log)) gridY++;
+  // } else if (newDirection === Direction.Down) {
+  //   // gridY++;
+  //   if (!isCellAllowed(gridX, gridY, log)) gridX++;
+  // } else if (newDirection === Direction.Up) {
+  //   // gridY--;
+  //   if (!isCellAllowed(gridX, gridY, log)) gridX++;
+  // }
+  // if (log) console.log('2 gridX', gridX, 'gridY', gridY);
+
+  // const nextCell = board[newGridY] ? board[newGridY][newGridX] : undefined;
+  const nextCell = getNextCell(gridX, gridY, newDirection || direction, log);
   if (log)
-    console.log(
-      'grid [' + gridX + ', ' + gridY + '] -> [' + newGridX + ', ' + newGridY + ']',
-      'nextCell',
-      sideCell,
-      'isCellAllowed',
-      isCellAllowed(newGridX, newGridY),
-      'isSideCellAllowed',
-      isSideCellAllowed(gridX, gridY, newDirection)
-    );
-  const [originalGridX, originalGridY] = pxToGrid(pxX, pxY);
+    // console.log(
+    //   'cell [' + cellX + ', ' + cellY + '] -> [' + (nextCell && nextCell[0]) + ', ' + (nextCell && nextCell[1]) + ']',
+    //   'nextCell',
+    //   nextCell
+    // );
+    console.log('cell [' + gridX + ', ' + gridY + '] -> [' + nextCell[0] + ', ' + nextCell[1] + ']');
+  const [currentGridX, currentGridY] = pxToGrid(posX, posY);
   debugEl.innerText =
     'direction: ' +
     direction +
     '\nnewDirection: ' +
     newDirection +
-    '\nx: ' +
-    pxX.toFixed(4) +
-    '\ny: ' +
-    pxY.toFixed(4) +
-    '\noriginalGrid: (' +
-    originalGridX.toFixed(4) +
+    '\npos: (' +
+    posX +
     ', ' +
-    originalGridY.toFixed(4) +
+    posY +
+    ')\ngrid: (' +
+    currentGridX +
+    ', ' +
+    currentGridY +
+    ')\nnew pos: (' +
+    newX.toFixed(4) +
+    ', ' +
+    newY.toFixed(4) +
     ')' +
-    '\ngrid: (' +
+    '\nnew grid: (' +
     gridX +
     ', ' +
     gridY +
     ')' +
-    '\nnewGrid: (' +
-    newGridX +
+    '\nnextCell: (' +
+    nextCell[0] +
     ', ' +
-    newGridY +
-    ')' +
-    '\nside cell content: ' +
-    sideCell +
-    '\nisAllowed: ' +
-    isCellAllowed(newGridX, newGridY) +
-    '\nisSideCellAllowed: ' +
-    isSideCellAllowed(gridX, gridY, newDirection);
+    nextCell[1] +
+    "): '" +
+    board[nextCell[1]][nextCell[0]] +
+    "'\nisAllowed: " +
+    isCellAllowed(nextCell[0], nextCell[1], newDirection);
   if (log) {
-    (window as any).debugDot = [pxX, pxY];
-    console.groupEnd();
+    (window as any).debugDot = [newX, newY];
   }
-  (window as any).currentCell = pxToCell(pxX, pxY);
-  (window as any).nextCell = gridToPx(newGridX, newGridY);
-  if (!isCellAllowed(newGridX, newGridY)) return null;
+  (window as any).nextCell = gridToPx(nextCell[0], nextCell[1]);
+  if (!isCellAllowed(nextCell[0], nextCell[1], newDirection)) {
+    if (log) {
+      console.log('nextCell not allowed');
+    }
+    console.groupEnd();
+    return false;
+  }
   // else if (isHorizontalDirection(newDirection)) return TOP_MARGIN + WALL_MARGIN + gridY * DOT_GAP;
   // else return gridX * DOT_GAP + WALL_MARGIN;
   // snap to grid
-  else if (isHorizontalDirection(newDirection)) return gridToPx(0, newGridY)[1];
-  else return gridToPx(newGridX, 0)[0];
+  if (isHorizontalDirection(newDirection || direction)) {
+    if (log) console.log('return new y', gridToPx(0, gridY)[1]);
+    console.groupEnd();
+    return gridToPx(0, gridY)[1];
+  } else {
+    if (log) console.log('return new x', gridToPx(gridX, 0)[0]);
+    console.groupEnd();
+    return gridToPx(gridX, 0)[0];
+  }
 }
 
 document.addEventListener('keydown', (event) => {
-  let newPos: number | null;
+  let newPos: number | false;
   let log = true;
   switch (event.key) {
     case '`':
@@ -276,7 +277,7 @@ document.addEventListener('keydown', (event) => {
       if (direction === Direction.Up) return;
       newPos = getNewPos(posX, posY, Direction.Up, log);
       if (newPos) {
-        posX = newPos;
+        // posX = newPos;
         direction = Direction.Up;
       }
       // direction = Direction.Up;
@@ -285,7 +286,7 @@ document.addEventListener('keydown', (event) => {
       if (direction === Direction.Down) return;
       newPos = getNewPos(posX, posY, Direction.Down, log);
       if (newPos) {
-        posX = newPos;
+        // posX = newPos;
         direction = Direction.Down;
       }
       // direction = Direction.Down;
@@ -294,7 +295,7 @@ document.addEventListener('keydown', (event) => {
       if (direction === Direction.Right) return;
       newPos = getNewPos(posX, posY, Direction.Right, log);
       if (newPos) {
-        posY = newPos;
+        // posY = newPos;
         direction = Direction.Right;
       }
       // direction = Direction.Right;
@@ -303,7 +304,7 @@ document.addEventListener('keydown', (event) => {
       if (direction === Direction.Left) return;
       newPos = getNewPos(posX, posY, Direction.Left, log);
       if (newPos) {
-        posY = newPos;
+        // posY = newPos;
         direction = Direction.Left;
       }
       // direction = Direction.Left;
@@ -318,4 +319,4 @@ drawBoard();
 drawPacman(posX, posY, Direction.Right, pacmanFrame);
 requestAnimationFrame(tick);
 
-debugEl.innerText = 'posX: ' + posX.toFixed(2) + '\nposY: ' + posY.toFixed(2);
+// debugEl.innerText = 'posX: ' + posX.toFixed(2) + '\nposY: ' + posY.toFixed(2);

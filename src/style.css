@@ -36,8 +36,8 @@ img {
   position: absolute;
   top: -13px;
   left: 0;
-  width: 150px;
+  /* width: 150px; */
   background: black;
   padding: 5px;
-  opacity: 0.75;
+  /* opacity: 0.75; */
 }

@@ -1,7 +1,7 @@
 const SCREEN_WIDTH = 224;
 const SCREEN_HEIGHT = 288;
-const TOP_MARGIN = 24; // score area; 8.333% of SCREEN_HEIGHT
-const BOTTOM_MARGIN = 16; // pacmen left, fruit; 5.555% of SCREEN_HEIGHT
+const TOP_MARGIN = 24;
+const BOTTOM_MARGIN = 16;
 const BOARD_HEIGHT = SCREEN_HEIGHT - TOP_MARGIN - BOTTOM_MARGIN; // 248 px
 const canvas = document.getElementById('gameCanvas') as HTMLCanvasElement;
 const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
