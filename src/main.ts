@@ -28,12 +28,13 @@ const debugEl = document.querySelector('#debug') as HTMLDivElement;
 // 3.5s na przejście dolnego rzędu - 202 px od pierwszej do ostatniej kropki
 // 1 s = 57,71 px
 // const PACMAN_SPEED = 1; // px/s
-const PACMAN_SPEED = 5; // px/s
+// const PACMAN_SPEED = 5; // px/s
 // const PACMAN_SPEED = 20; // px/s
 // const PACMAN_SPEED = 57.71; // px/s
-// const PACMAN_SPEED = 60; // px/s
-let direction = Direction.Up;
+const PACMAN_SPEED = 60; // px/s
+// let direction = Direction.Up;
 // let direction = Direction.Down;
+let direction = Direction.Right;
 //position in dot grid
 // let posY = 211;
 // let posX = 111;
@@ -42,10 +43,10 @@ let direction = Direction.Up;
 // let posY = 187;
 // let posX = 99;
 // let [posX, posY] = gridToPx(20, 14);
-// let [posX, posY] = gridToPx(13, 22); // default
-// posX -= 4; // center default position
+let [posX, posY] = gridToPx(13, 23); // default
+posX += 4; // center default position
 // let [posX, posY] = gridToPx(17, 10);
-let [posX, posY] = gridToPx(20, 3);
+// let [posX, posY] = gridToPx(20, 3);
 let pacmanFrame: Frame = 0;
 let pause = false;
 let lastTimestamp: number | null = null;
@@ -383,7 +384,7 @@ function tick(timestamp: number) {
   // if (newXGrid < 0) newXGrid = 0;
   // if (newYGrid < 0) newYGrid = 0;
   const nextCell = getNextCell(newXGrid, newYGrid, direction);
-  console.log('newXGrid', newXGrid, 'newYGrid', newYGrid, 'nextCell', nextCell);
+  // console.log('newXGrid', newXGrid, 'newYGrid', newYGrid, 'nextCell', nextCell);
   (window as any).nextCell = gridToPx(nextCell[0], nextCell[1]);
 
   const currentCell = pxToGrid(posX, posY);

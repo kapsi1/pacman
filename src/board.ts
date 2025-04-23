@@ -1,78 +1,48 @@
 import { ctx, TOP_MARGIN } from './canvas';
 
-export const WALL_MARGIN = 11; // distance from wall
+export const WALL_MARGIN = 4; // distance from wall
 export const DOT_GAP = 8;
 
 // const DEBUG_DOTS = true;
 const DEBUG_DOTS = false;
-// const DRAW_DOTS = true;
-const DRAW_DOTS = false;
-const DEBUG_GRID = true;
-// const DEBUG_GRID = false;
+const DRAW_DOTS = true;
+// const DRAW_DOTS = false;
+// const DEBUG_GRID = true;
+const DEBUG_GRID = false;
 ctx.font = '4px monospace';
 
 // game board is 26 tiles wide and 29 tiles high
-// const boardS = `
-// ............##............
-// .####.#####.##.#####.####.
-// o#  #.#   #.##.#   #.#  #o
-// .####.#####.##.#####.####.
-// ..........................
-// .####.##.########.##.####.
-// .####.##.########.##.####.
-// ......##....##....##......
-// #####.##### ## #####.#####
-//     #.##### ## #####.#
-//     #.##          ##.#
-//     #.## ######## ##.#
-// #####.## #      # ##.#####
-//      .   #      #   .
-// #####.## #      # ##.#####
-//     #.## ######## ##.#
-//     #.##          ##.#
-//     #.## ######## ##.#
-// #####.## ######## ##.#####
-// ............##............
-// .####.#####.##.#####.####.
-// .####.#####.##.#####.####.
-// o..##.......  .......##..o
-// ##.##.##.########.##.##.##
-// ##.##.##.########.##.##.##
-// ......##....##....##......
-// .##########.##.##########.
-// .##########.##.##########.
-// ..........................`;
-//todo dodać z lewej i góry
 const boardS = `
-............# ............
-.### .#### .# .#### .### .
-o### .#### .# .#### .### o
-.    .     .  .     .    .
-..........................
-.### .# .####### .# .### .
-.    .# .   #    .# .    .
-......# ....# ....# ......
-#### .####  #  #### .#####
-   # .#           # .#    
-   # .#           # .#    
-#### .#  #######  # .#####
-     .   #     #    .     
-     .   #     #    .     
-#### .#  #######  # .#####
-   # .#           # .#    
-   # .#           # .#    
-#### .#  #######  # .#####
-     .      #       .     
-............# ............
-.### .#### .# .#### .### .
-.  # .     .  .     .#   .
-o..# .......  .......# ..o
-# .# .# .####### .# .# .##
-  .# .# .   #    .# .  .  
-......# ....# ....# ......
-.######### .# .######### .
-.          .  .          .
-..........................`;
+             #             
+ ............# ............
+ .### .#### .# .#### .### .
+ o### .#### .# .#### .### o
+ .    .     .  .     .    .
+ ..........................
+ .### .# .####### .# .### .
+ .    .# .   #    .# .    .
+ ......# ....# ....# ......
+##### .####  #  #### .#####
+    # .#           # .#    
+    # .#           # .#    
+##### .#  #######  # .#####
+      .   #     #    .     
+      .   #     #    .     
+##### .#  #######  # .#####
+    # .#           # .#    
+    # .#           # .#    
+##### .#  #######  # .#####
+      .      #       .     
+ ............# ............
+ .### .#### .# .#### .### .
+ .  # .     .  .     .#   .
+ o..# .......  .......# ..o
+## .# .# .####### .# .# .##
+   .# .# .   #    .# .  .  
+ ......# ....# ....# ......
+ .######### .# .######### .
+ .          .  .          .
+ ..........................`;
 
 const colors = {
   background: 'black',
@@ -129,21 +99,21 @@ function drawDots() {
     });
   });
   ctx.fill();
-  if ((window as any).currentCell) {
+  if (DEBUG_GRID && (window as any).currentCell) {
     const c = (window as any).currentCell;
     ctx.fillStyle = 'blue';
     ctx.beginPath();
     ctx.rect(c[0], c[1], DOT_GAP, DOT_GAP);
     ctx.fill();
   }
-  if ((window as any).nextCell) {
+  if (DEBUG_GRID && (window as any).nextCell) {
     const c = (window as any).nextCell;
     ctx.fillStyle = 'gray';
     ctx.beginPath();
     ctx.rect(c[0], c[1], DOT_GAP, DOT_GAP);
     ctx.fill();
   }
-  if ((window as any).debugDot) {
+  if (DEBUG_GRID && (window as any).debugDot) {
     ctx.fillStyle = 'red';
     ctx.beginPath();
     ctx.rect((window as any).debugDot[0], (window as any).debugDot[1], 2, 2);
