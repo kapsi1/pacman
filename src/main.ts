@@ -25,16 +25,19 @@ const getCellCornerFromPoint = (pxX: number, pxY: number) => {
 };
 
 const debugEl = document.querySelector('#debug') as HTMLDivElement;
+const DIRECTION_CHANGE_BUFFER_TIME = 200;
 // 3.5s na przejście dolnego rzędu - 202 px od pierwszej do ostatniej kropki
 // 1 s = 57,71 px
 // const PACMAN_SPEED = 1; // px/s
 // const PACMAN_SPEED = 5; // px/s
+const PACMAN_SPEED = 10; // px/s
 // const PACMAN_SPEED = 20; // px/s
-// const PACMAN_SPEED = 57.71; // px/s
-const PACMAN_SPEED = 60; // px/s
+// const PACMAN_SPEED = 57.71; // px/s //default
+// const PACMAN_SPEED = 60; // px/s
 // let direction = Direction.Up;
 // let direction = Direction.Down;
 let direction = Direction.Right;
+let newDirection: Direction | null = null;
 //position in dot grid
 // let posY = 211;
 // let posX = 111;
@@ -43,14 +46,17 @@ let direction = Direction.Right;
 // let posY = 187;
 // let posX = 99;
 // let [posX, posY] = gridToPx(20, 14);
-let [posX, posY] = gridToPx(13, 23); // default
-posX += 4; // center default position
+// let [posX, posY] = gridToPx(13, 23); // default
+// posX += 4; // center default position
+let [posX, posY] = gridToPx(12, 23); // default
 // let [posX, posY] = gridToPx(17, 10);
 // let [posX, posY] = gridToPx(20, 3);
 let pacmanFrame: Frame = 0;
 let pause = false;
 let lastTimestamp: number | null = null;
 let lastFrameTimestamp = 0;
+// let directionChangeElapsed: number | null = null;
+let directionChangeTimestamp: number | null = null;
 
 // const isCellAllowed = (gridX: number, gridY: number, direction?: Direction, log = true) => {
 //   if (!board[gridY]) return false;
@@ -86,7 +92,7 @@ const getNextCell = (gridX: number, gridY: number, direction: Direction, log = f
 // Called when trying to change directions on Pacman.
 // Returns null if new direction is blocked,
 // otherwise returns a coordinate (x if going vertical, y if horizontal), snapped to grid.
-function getNewPos(newX: number, newY: number, newDirection?: Direction, log = false) {
+function changeDirections(newX: number, newY: number, newDirection?: Direction, log = false) {
   const currentDirection = direction;
   let [gridX, gridY] = pxToGrid(newX, newY);
 
@@ -222,6 +228,7 @@ function getNewPos(newX: number, newY: number, newDirection?: Direction, log = f
     return false;
   }
 
+  //Check neighbouring cells of the next cell, and get the non-changing coordinate snapped to grid
   if (newDirection === Direction.Left) {
     cellsToCheckOffsets = [
       [0, 1],
@@ -270,22 +277,22 @@ function getNewPos(newX: number, newY: number, newDirection?: Direction, log = f
       if (!isCellAllowed(cellToCheck[0], cellToCheck[1])) {
         if (isHorizontalDirection(newDirection!)) {
           if (offsets[1] < 0) {
-            // upper neighbor
+            // upper neighbour
             if (log) console.log('up, new cell', nextCell[0], nextCell[1] + 1);
             posY = gridToPx(nextCell[0], nextCell[1] + 1)[1];
           } else {
-            // lower neighbor
+            // lower neighbour
             if (log) console.log('down, new cell', nextCell[0], nextCell[1]);
             posY = gridToPx(nextCell[0], nextCell[1])[1];
           }
           if (log) console.log('posY', posY);
         } else {
           if (offsets[0] < 0) {
-            // left neighbor
+            // left neighbour
             if (log) console.log('left, new cell', nextCell[0] + 1, nextCell[1]);
             posX = gridToPx(nextCell[0] + 1, nextCell[1])[0];
           } else {
-            // right neighbor
+            // right neighbour
             if (log) console.log('right, new cell', nextCell[0], nextCell[1]);
             posX = gridToPx(nextCell[0], nextCell[1])[0];
           }
@@ -296,23 +303,24 @@ function getNewPos(newX: number, newY: number, newDirection?: Direction, log = f
     }
   }
 
+  console.groupEnd();
+  return true;
+
   // else if (isHorizontalDirection(newDirection)) return TOP_MARGIN + WALL_MARGIN + gridY * DOT_GAP;
   // else return gridX * DOT_GAP + WALL_MARGIN;
   // snap to grid
-  if (isHorizontalDirection(newDirection || direction)) {
-    if (log) console.log('return new y', gridToPx(0, gridY)[1]);
-    console.groupEnd();
-    return gridToPx(0, gridY)[1];
-  } else {
-    if (log) console.log('return new x', gridToPx(gridX, 0)[0]);
-    console.groupEnd();
-    return gridToPx(gridX, 0)[0];
-  }
+  // if (isHorizontalDirection(newDirection || direction)) {
+  //   if (log) console.log('return new y', gridToPx(0, gridY)[1]);
+  //   console.groupEnd();
+  //   return gridToPx(0, gridY)[1];
+  // } else {
+  //   if (log) console.log('return new x', gridToPx(gridX, 0)[0]);
+  //   console.groupEnd();
+  //   return gridToPx(gridX, 0)[0];
+  // }
 }
 
 document.addEventListener('keydown', (event) => {
-  let newPos: number | false;
-  let log = true;
   switch (event.key) {
     case '`':
     case ' ':
@@ -324,39 +332,23 @@ document.addEventListener('keydown', (event) => {
       break;
     case 'w':
       if (direction === Direction.Up) return;
-      newPos = getNewPos(posX, posY, Direction.Up, log);
-      if (newPos) {
-        // posX = newPos;
-        direction = Direction.Up;
-      }
-      // direction = Direction.Up;
+      newDirection = Direction.Up;
+      directionChangeTimestamp = lastTimestamp;
       break;
     case 's':
       if (direction === Direction.Down) return;
-      newPos = getNewPos(posX, posY, Direction.Down, log);
-      if (newPos) {
-        // posX = newPos;
-        direction = Direction.Down;
-      }
-      // direction = Direction.Down;
+      newDirection = Direction.Down;
+      directionChangeTimestamp = lastTimestamp;
       break;
     case 'd':
       if (direction === Direction.Right) return;
-      newPos = getNewPos(posX, posY, Direction.Right, log);
-      if (newPos) {
-        // posY = newPos;
-        direction = Direction.Right;
-      }
-      // direction = Direction.Right;
+      newDirection = Direction.Right;
+      directionChangeTimestamp = lastTimestamp;
       break;
     case 'a':
       if (direction === Direction.Left) return;
-      newPos = getNewPos(posX, posY, Direction.Left, log);
-      if (newPos) {
-        // posY = newPos;
-        direction = Direction.Left;
-      }
-      // direction = Direction.Left;
+      newDirection = Direction.Left;
+      directionChangeTimestamp = lastTimestamp;
       break;
   }
   ctx.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -370,10 +362,31 @@ function tick(timestamp: number) {
   const deltaT = timestamp - lastTimestamp;
   const deltaPx = (PACMAN_SPEED * deltaT) / 1000;
   lastTimestamp = timestamp;
+  // directionChangeElapsed += deltaT;
+  // console.log(
+  //   'directionChangeTimestamp',
+  //   directionChangeTimestamp,
+  //   'timestamp',
+  //   timestamp,
+  //   'diff',
+  //   directionChangeTimestamp ? timestamp - directionChangeTimestamp : null,
+  //   'newDirection',
+  //   newDirection
+  // );
 
-  // TODO clear only needed part of the screen
-  ctx.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-
+  // Delete buffered direction change after some time
+  if (directionChangeTimestamp !== null && timestamp - directionChangeTimestamp > DIRECTION_CHANGE_BUFFER_TIME) {
+    console.log('delete direction');
+    directionChangeTimestamp = null;
+  }
+  if (directionChangeTimestamp !== null && newDirection) {
+    const changedDirection = changeDirections(posX, posY, newDirection, true);
+    if (changedDirection) {
+      direction = newDirection;
+      newDirection = null;
+      directionChangeTimestamp = null;
+    }
+  }
   let newX = posX;
   let newY = posY;
   if (direction === Direction.Right) newX += deltaPx;
@@ -392,6 +405,8 @@ function tick(timestamp: number) {
   debugEl.innerText =
     'direction: ' +
     direction +
+    '\nnewDirection: ' +
+    newDirection +
     '\n      pos: (' +
     posX +
     ', ' +
@@ -436,7 +451,6 @@ function tick(timestamp: number) {
     }
   }
   (window as any).currentCell = getCellCornerFromPoint(posX, posY);
-
   // change animation frame every 60 ms
   if (timestamp - lastFrameTimestamp > 60) {
     lastFrameTimestamp = timestamp;
@@ -444,6 +458,8 @@ function tick(timestamp: number) {
     if (pacmanFrame > 2) pacmanFrame = 0;
   }
 
+  // TODO clear only needed part of the screen
+  ctx.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
   drawBoard();
   drawPacman(posX, posY, direction, pacmanFrame);
   requestAnimationFrame(tick);
