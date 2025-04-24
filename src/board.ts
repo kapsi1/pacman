@@ -7,8 +7,8 @@ export const DOT_GAP = 8;
 const DEBUG_DOTS = false;
 const DRAW_DOTS = true;
 // const DRAW_DOTS = false;
-const DEBUG_GRID = true;
-// const DEBUG_GRID = false;
+// const DEBUG_GRID = true;
+const DEBUG_GRID = false;
 ctx.font = '4px monospace';
 
 // game board is 26 tiles wide and 29 tiles high

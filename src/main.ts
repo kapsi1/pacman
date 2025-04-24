@@ -25,6 +25,7 @@ const getCellCornerFromPoint = (pxX: number, pxY: number) => {
 };
 
 const debugEl = document.querySelector('#debug') as HTMLDivElement;
+const scoreEl = document.querySelector('#score') as HTMLDivElement;
 const DIRECTION_CHANGE_BUFFER_TIME = 200;
 // const PACMAN_SPEED = 5; // px/s
 // const PACMAN_SPEED = 10; // px/s
@@ -38,6 +39,7 @@ let pause = false;
 let lastTimestamp: number | null = null;
 let lastFrameTimestamp = 0;
 let directionChangeTimestamp: number | null = null;
+let score = 0;
 
 // Check given cell, or neighbouring cell in the specified direction
 const isCellAllowed = (gridX: number, gridY: number, oldDirection?: Direction, newDirection?: Direction) => {
@@ -312,7 +314,7 @@ function tick(timestamp: number) {
     ', ' +
     newYGrid +
     ') "' +
-    board[newYGrid][newXGrid] +
+    (board[newYGrid] ? board[newYGrid][newXGrid] : null) +
     '"\nnext cell: (' +
     nextCell[0] +
     ', ' +
@@ -335,6 +337,22 @@ function tick(timestamp: number) {
       posY = Math.round(posY);
     }
   }
+
+  let scoreChanged = false;
+  if (board[newYGrid] && board[newYGrid][newXGrid] === '.') {
+    score += 10;
+    scoreChanged = true;
+  } else if (board[newYGrid] && board[newYGrid][newXGrid] === 'o') {
+    score += 50;
+    scoreChanged = true;
+  }
+
+  if (scoreChanged) {
+    scoreEl.textContent = score.toString();
+    const row = board[newYGrid];
+    board[newYGrid] = row.substring(0, newXGrid) + ' ' + row.substring(newXGrid + 1);
+  }
+
   (window as any).currentCell = getCellCornerFromPoint(posX, posY);
   // change animation frame every 60 ms
   if (timestamp - lastFrameTimestamp > 60) {
