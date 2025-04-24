@@ -26,9 +26,8 @@ const getCellCornerFromPoint = (pxX: number, pxY: number) => {
 
 const debugEl = document.querySelector('#debug') as HTMLDivElement;
 const scoreEl = document.querySelector('#score') as HTMLDivElement;
-const DIRECTION_CHANGE_BUFFER_TIME = 200;
+const DIRECTION_CHANGE_BUFFER_TIME = 500;
 // const PACMAN_SPEED = 5; // px/s
-// const PACMAN_SPEED = 10; // px/s
 const PACMAN_SPEED = 60; // px/s // default
 let direction = Direction.Right;
 let newDirection: Direction | null = null;
@@ -57,7 +56,7 @@ const isCellAllowed = (gridX: number, gridY: number, oldDirection?: Direction, n
   }
 };
 
-const getNextCell = (gridX: number, gridY: number, direction: Direction, log = false) => {
+const getNextCell = (gridX: number, gridY: number, direction: Direction) => {
   if (direction === Direction.Down) gridY++;
   else if (direction === Direction.Up) gridY--;
   else if (direction === Direction.Left) gridX--;
@@ -91,11 +90,8 @@ function changeDirections(newX: number, newY: number, newDirection?: Direction, 
     );
   }
 
-  // gridX = Math.floor(gridX);
-  // gridY = Math.floor(gridY);
-  let nextCell = getNextCell(gridX, gridY, newDirection || direction, log);
+  let nextCell = getNextCell(gridX, gridY, newDirection || direction);
   if (log) console.log('nextCell', nextCell);
-
   if (log) console.log('cell [' + gridX + ', ' + gridY + '] -> [' + nextCell[0] + ', ' + nextCell[1] + ']');
   const [currentGridX, currentGridY] = pxToGrid(posX, posY);
   debugEl.innerText =
@@ -147,29 +143,21 @@ function changeDirections(newX: number, newY: number, newDirection?: Direction, 
     cellsToCheckOffsets = [
       [0, 1],
       [0, -1],
-      [-1, 1],
-      [-1, -1],
     ];
   } else if (newDirection === Direction.Right) {
     cellsToCheckOffsets = [
       [0, 1],
       [0, -1],
-      [1, 1],
-      [1, -1],
     ];
   } else if (newDirection === Direction.Up) {
     cellsToCheckOffsets = [
       [1, 0],
       [-1, 0],
-      [1, -1],
-      [-1, -1],
     ];
   } else if (newDirection === Direction.Down) {
     cellsToCheckOffsets = [
       [1, 0],
       [-1, 0],
-      [1, 1],
-      [-1, 1],
     ];
   }
 
@@ -232,21 +220,25 @@ document.addEventListener('keydown', (event) => {
       }
       break;
     case 'w':
+    case 'ArrowUp':
       if (direction === Direction.Up) return;
       newDirection = Direction.Up;
       directionChangeTimestamp = lastTimestamp;
       break;
     case 's':
+    case 'ArrowDown':
       if (direction === Direction.Down) return;
       newDirection = Direction.Down;
       directionChangeTimestamp = lastTimestamp;
       break;
     case 'd':
+    case 'ArrowRight':
       if (direction === Direction.Right) return;
       newDirection = Direction.Right;
       directionChangeTimestamp = lastTimestamp;
       break;
     case 'a':
+    case 'ArrowLeft':
       if (direction === Direction.Left) return;
       newDirection = Direction.Left;
       directionChangeTimestamp = lastTimestamp;
@@ -264,13 +256,20 @@ function tick(timestamp: number) {
   const deltaPx = (PACMAN_SPEED * deltaT) / 1000;
   lastTimestamp = timestamp;
 
-  // Delete buffered direction change after some time
+  // Delete buffered direction change after specified time
   if (directionChangeTimestamp !== null && timestamp - directionChangeTimestamp > DIRECTION_CHANGE_BUFFER_TIME) {
     directionChangeTimestamp = null;
     newDirection = null;
   }
-  if (newDirection) {
-    const changedDirection = changeDirections(posX, posY, newDirection, true);
+
+  const currentCellCorner = getCellCornerFromPoint(posX, posY);
+  const xDelta = posX - currentCellCorner[0];
+  const yDelta = posY - currentCellCorner[1];
+  const delta = xDelta + yDelta;
+
+  // Change direction if we're close to the cell's top left corner
+  if (delta <= 1 && newDirection) {
+    const changedDirection = changeDirections(posX, posY, newDirection, false);
     if (changedDirection) {
       direction = newDirection;
       newDirection = null;
@@ -284,6 +283,7 @@ function tick(timestamp: number) {
   if (direction === Direction.Down) newY += deltaPx;
   if (direction === Direction.Up) newY -= deltaPx;
   let [newXGrid, newYGrid] = pxToGrid(newX, newY);
+
   const nextCell = getNextCell(newXGrid, newYGrid, direction);
   (window as any).nextCell = gridToPx(nextCell[0], nextCell[1]);
 
@@ -323,11 +323,14 @@ function tick(timestamp: number) {
     (board[nextCell[1]] ? board[nextCell[1]][nextCell[0]] : null) +
     '"';
 
-  // let moveAllowed = true;
-  // if (!board[nextCell[1]] || !board[nextCell[1]][nextCell[0]]) moveAllowed = false;
-  // if (board[nextCell[1]] && board[nextCell[1]][nextCell[0]] === '#') moveAllowed = false;
+  let isAllowed = false;
+  if (direction === Direction.Down || direction === Direction.Right) {
+    isAllowed = isCellAllowed(nextCell[0], nextCell[1]);
+  } else {
+    isAllowed = isCellAllowed(newXGrid, newYGrid);
+  }
 
-  if (isCellAllowed(nextCell[0], nextCell[1])) {
+  if (isAllowed) {
     posX = newX;
     posY = newY;
   } else {
@@ -361,7 +364,6 @@ function tick(timestamp: number) {
     if (pacmanFrame > 2) pacmanFrame = 0;
   }
 
-  // TODO clear only needed part of the screen
   ctx.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
   drawBoard();
   drawPacman(posX, posY, direction, pacmanFrame);
