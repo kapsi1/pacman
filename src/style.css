@@ -35,7 +35,7 @@ img {
 }
 
 #debug {
-  display: none;
+  /* display: none; */
   font-family: monospace;
   color: #a3a3a3;
   position: absolute;
@@ -45,6 +45,7 @@ img {
   background: black;
   padding: 5px;
   /* opacity: 0.75; */
+  z-index: 999;
 }
 
 #score {

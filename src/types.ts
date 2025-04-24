@@ -1,0 +1,16 @@
+export enum Direction {
+  Left = 'left',
+  Up = 'up',
+  Right = 'right',
+  Down = 'down',
+}
+
+export type GridPos = {
+  x: number;
+  y: number;
+};
+
+export type PxPos = {
+  x: number;
+  y: number;
+};
