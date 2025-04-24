@@ -1,80 +1,8 @@
 import { ctx, TOP_MARGIN } from './canvas';
+import { CELL_SIZE, DEBUG_DOTS, DEBUG_GRID, DOT_SIZE, DRAW_DOTS, WALL_MARGIN, BOARD } from './consts';
+import { gridToPx } from './utils';
 
-export const WALL_MARGIN = 4; // distance from wall
-export const CELL_SIZE = 8;
-
-// const DEBUG_DOTS = true;
-const DEBUG_DOTS = false;
-// const DRAW_DOTS = true;
-const DRAW_DOTS = false;
-const DEBUG_GRID = true;
-// const DEBUG_GRID = false;
 ctx.font = '4px monospace';
-
-// game board is 26 tiles wide and 29 tiles high
-// const boardS = `
-//              #
-//  ............# ............
-//  .### .#### .# .#### .### .
-//  o### .#### .# .#### .### o
-//  .    .     .  .     .    .
-//  ..........................
-//  .### .# .####### .# .### .
-//  .    .# .   #    .# .    .
-//  ......# ....# ....# ......
-// ##### .####  #  #### .#####
-//     # .#           # .#
-//     # .#           # .#
-// ##### .#  #######  # .#####
-//       .   #     #    .
-//       .   #     #    .
-// ##### .#  #######  # .#####
-//     # .#           # .#
-//     # .#           # .#
-// ##### .#  #######  # .#####
-//       .      #       .
-//  ............# ............
-//  .### .#### .# .#### .### .
-//  .  # .     .  .     .#   .
-//  o..# .......  .......# ..o
-// ## .# .# .####### .# .# .##
-//    .# .# .   #    .# .  .
-//  ......# ....# ....# ......
-//  .######### .# .######### .
-//  .          .  .          .
-//  ..........................`;
-
-const boardS = `
- ##########################
- ............##............
- .####.#####.##.#####.####.
- o####.#####.##.#####.####o
- .####.#####.##.#####.####.
- ..........................
- .####.##.########.##.####.
- .####.##.########.##.####.
- ......##....##....##......
-######.##### ## #####.#####
-     #.##### ## #####.#    
-     #.##          ##.#    
-     #.## ######## ##.#    
-######.## #      # ##.#####
-      .   #      #   .     
-######.## #      # ##.#####
-     #.## ######## ##.#    
-     #.##          ##.#    
-     #.## ######## ##.#    
-######.## ######## ##.#####
- ............##............
- .####.#####.##.#####.####.
- .####.#####.##.#####.####.
- o..##.......  .......##..o
-###.##.##.########.##.##.##
-###.##.##.########.##.##.##
- ......##....##....##......
- .##########.##.##########.
- .##########.##.##########.
- ..........................`;
 
 const colors = {
   background: 'black',
@@ -82,7 +10,7 @@ const colors = {
   wall: '#2121de',
 };
 
-export const board = boardS.split('\n');
+export const board = BOARD.split('\n');
 board.shift();
 
 function drawEnergizer(x: number, y: number) {
@@ -93,7 +21,6 @@ function drawEnergizer(x: number, y: number) {
 }
 
 function drawDots() {
-  const dotSize = 2;
   ctx.fillStyle = colors.dot;
   ctx.strokeStyle = colors.dot;
   ctx.beginPath();
@@ -101,39 +28,43 @@ function drawDots() {
     row.split('').forEach((char, x) => {
       if (DEBUG_DOTS) ctx.beginPath();
       ctx.fillStyle = colors.dot;
-      const dotX = WALL_MARGIN + x * CELL_SIZE;
-      const dotY = TOP_MARGIN + WALL_MARGIN + y * CELL_SIZE;
+      // const dotX = WALL_MARGIN + x * CELL_SIZE;
+      // const dotY = TOP_MARGIN + WALL_MARGIN + y * CELL_SIZE;
+      // dotX and dotY points are centers of cells
+      const dotX = WALL_MARGIN + x * CELL_SIZE + CELL_SIZE / 2;
+      const dotY = TOP_MARGIN + WALL_MARGIN + y * CELL_SIZE + CELL_SIZE / 2;
       if (DRAW_DOTS) {
         if (char === '.') {
-          ctx.rect(dotX, dotY, dotSize, dotSize);
+          ctx.rect(dotX - DOT_SIZE / 2, dotY - DOT_SIZE / 2, DOT_SIZE, DOT_SIZE);
         }
         if (char === 'o') {
-          drawEnergizer(dotX - 3, dotY - 3);
+          drawEnergizer(dotX - DOT_SIZE * 2, dotY - DOT_SIZE * 2);
         }
       }
       if (DEBUG_DOTS) {
         ctx.fillStyle = char === '#' ? 'red' : 'green';
-        ctx.rect(dotX, dotY, dotSize, dotSize);
+        ctx.rect(dotX - DOT_SIZE / 2, dotY - DOT_SIZE / 2, DOT_SIZE, DOT_SIZE);
         ctx.fill();
       }
       if (DEBUG_GRID) {
         ctx.lineWidth = 0.1;
         ctx.strokeStyle = 'gray';
-        ctx.strokeRect(dotX, dotY, CELL_SIZE, CELL_SIZE);
+        ctx.strokeRect(dotX - CELL_SIZE / 2, dotY - CELL_SIZE / 2, CELL_SIZE, CELL_SIZE);
         ctx.fillStyle = char === '#' ? '#ba000045' : '#00a3184a';
-        ctx.fillRect(dotX, dotY, CELL_SIZE, CELL_SIZE);
+        ctx.fillRect(dotX - CELL_SIZE / 2, dotY - CELL_SIZE / 2, CELL_SIZE, CELL_SIZE);
         ctx.fillStyle = 'white';
-        if (x === 0 || x === row.length - 1) ctx.fillText(y.toString(), dotX + 4, dotY + 4);
-        if (x > 0 && (y === board.length - 1 || y === 0)) ctx.fillText(x.toString(), dotX + 4, dotY + 4);
+        if (x === 0 || x === row.length - 1) ctx.fillText(y.toString(), dotX, dotY);
+        if (x > 0 && (y === board.length - 1 || y === 0)) ctx.fillText(x.toString(), dotX, dotY);
       }
     });
   });
   ctx.fill();
+
   if (DEBUG_GRID && (window as any).currentCell) {
-    const c = (window as any).currentCell;
+    const pos = gridToPx((window as any).currentCell);
     ctx.fillStyle = 'blue';
     ctx.beginPath();
-    ctx.rect(c[0], c[1], CELL_SIZE, CELL_SIZE);
+    ctx.rect(pos.x - CELL_SIZE / 2, pos.y - CELL_SIZE / 2, CELL_SIZE, CELL_SIZE);
     ctx.fill();
   }
   if (DEBUG_GRID && (window as any).nextCell) {

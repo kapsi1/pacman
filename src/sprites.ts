@@ -1,8 +1,6 @@
 import { ctx } from './canvas';
-import { Direction } from './types';
-import { PxPos } from './types';
-// const DEBUG_PACMAN = false;
-const DEBUG_PACMAN = true;
+import { Direction, PxPos } from './types';
+import { DOT_SIZE, DEBUG_PACMAN } from './consts';
 
 const sprites = document.images[0];
 const pacmanSpriteSize = 13;
@@ -30,33 +28,21 @@ export function drawPacman(pos: PxPos, direction: Direction, frame: 0 | 1 | 2) {
   posY = Math.round(posY - pacmanSpriteSize / 2);
   if (DEBUG_PACMAN) {
     ctx.fillStyle = 'yellow';
-    ctx.fillRect(dotX, dotY, 2, 2);
+    ctx.fillRect(dotX - DOT_SIZE / 2, dotY - DOT_SIZE / 2, 2, 2);
     ctx.globalAlpha = 0.1;
-    ctx.drawImage(
-      sprites,
-      srcX,
-      srcY,
-      pacmanSpriteSize,
-      pacmanSpriteSize,
-      posX,
-      posY,
-      pacmanSpriteSize,
-      pacmanSpriteSize
-    );
-    ctx.globalAlpha = 1;
-  } else {
-    ctx.drawImage(
-      sprites,
-      srcX,
-      srcY,
-      pacmanSpriteSize,
-      pacmanSpriteSize,
-      posX,
-      posY,
-      pacmanSpriteSize,
-      pacmanSpriteSize
-    );
   }
+  ctx.drawImage(
+    sprites,
+    srcX,
+    srcY,
+    pacmanSpriteSize,
+    pacmanSpriteSize,
+    posX,
+    posY,
+    pacmanSpriteSize,
+    pacmanSpriteSize
+  );
+  if (DEBUG_PACMAN) ctx.globalAlpha = 1;
 }
 
 export enum GhostName {
