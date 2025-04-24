@@ -1,8 +1,8 @@
 import { ctx } from './canvas';
 import { Direction } from './main';
 
-const DEBUG_PACMAN = false;
-// const DEBUG_PACMAN = true;
+// const DEBUG_PACMAN = false;
+const DEBUG_PACMAN = true;
 
 // state of Pacman's mouth
 // open, half, closed
