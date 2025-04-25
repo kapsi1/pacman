@@ -1,5 +1,5 @@
 import { ctx, TOP_MARGIN } from './canvas';
-import { CELL_SIZE, DEBUG_DOTS, DEBUG_GRID, DOT_SIZE, DRAW_DOTS, WALL_MARGIN, BOARD } from './consts';
+import { CELL_SIZE, DEBUG_DOTS, DEBUG_GRID, DOT_SIZE, DRAW_DOTS, WALL_MARGIN, board } from './consts';
 import { gridToPx } from './utils';
 
 ctx.font = '4px monospace';
@@ -9,9 +9,6 @@ const colors = {
   dot: '#ffb897',
   wall: '#2121de',
 };
-
-export const board = BOARD.split('\n');
-board.shift();
 
 function drawEnergizer(x: number, y: number) {
   // 8 x 8
@@ -68,10 +65,10 @@ function drawDots() {
     ctx.fill();
   }
   if (DEBUG_GRID && (window as any).nextCell) {
-    const c = (window as any).nextCell;
+    const pos = gridToPx((window as any).nextCell);
     ctx.fillStyle = 'gray';
     ctx.beginPath();
-    ctx.rect(c[0], c[1], CELL_SIZE, CELL_SIZE);
+    ctx.rect(pos.x - CELL_SIZE / 2, pos.y - CELL_SIZE / 2, CELL_SIZE, CELL_SIZE);
     ctx.fill();
   }
   if (DEBUG_GRID && (window as any).debugDot) {
