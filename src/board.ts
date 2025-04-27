@@ -25,8 +25,6 @@ function drawDots() {
     row.split('').forEach((char, x) => {
       if (DEBUG_DOTS) ctx.beginPath();
       ctx.fillStyle = colors.dot;
-      // const dotX = WALL_MARGIN + x * CELL_SIZE;
-      // const dotY = TOP_MARGIN + WALL_MARGIN + y * CELL_SIZE;
       // dotX and dotY points are centers of cells
       const dotX = WALL_MARGIN + x * CELL_SIZE + CELL_SIZE / 2;
       const dotY = TOP_MARGIN + WALL_MARGIN + y * CELL_SIZE + CELL_SIZE / 2;

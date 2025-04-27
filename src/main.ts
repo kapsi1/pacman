@@ -23,7 +23,6 @@ let pause = false;
 let lastTimestamp: number | null = null;
 let lastPacmanFrameTimestamp = 0;
 let lastGhostFrameTimestamp = 0;
-let directionChangeTimestamp: number | null = null;
 let score = 0;
 let isCornering = false;
 
@@ -41,25 +40,21 @@ document.addEventListener('keydown', (event) => {
     case 'ArrowUp':
       if (direction === Direction.Up) return;
       newDirection = Direction.Up;
-      directionChangeTimestamp = lastTimestamp;
       break;
     case 's':
     case 'ArrowDown':
       if (direction === Direction.Down) return;
       newDirection = Direction.Down;
-      directionChangeTimestamp = lastTimestamp;
       break;
     case 'd':
     case 'ArrowRight':
       if (direction === Direction.Right) return;
       newDirection = Direction.Right;
-      directionChangeTimestamp = lastTimestamp;
       break;
     case 'a':
     case 'ArrowLeft':
       if (direction === Direction.Left) return;
       newDirection = Direction.Left;
-      directionChangeTimestamp = lastTimestamp;
       break;
   }
   ctx.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -75,12 +70,6 @@ function tick(timestamp: number) {
   const deltaPx = (CHARACTER_SPEED * deltaT) / 1000;
   lastTimestamp = timestamp;
 
-  // Delete buffered direction change after specified time
-  // if (directionChangeTimestamp !== null && timestamp - directionChangeTimestamp > DIRECTION_CHANGE_BUFFER_TIME) {
-  //   directionChangeTimestamp = null;
-  //   newDirection = null;
-  // }
-
   let newXPx = pacmanPos.x;
   let newYPx = pacmanPos.y;
 
@@ -91,14 +80,13 @@ function tick(timestamp: number) {
 
   const currentCell = pxToGrid(pacmanPos);
 
-  // TODO jak idąc w dół skręcimy w prawo/lewo, to y jest o 1 za małe. Jak idąc w górę, to o 1 za duże.
-  // Tak samo skręcając horizontal -> vertical
-
+  // During cornering Pacman moves diagonally until he reaches
+  // the centerline of the new direction's path
   if (isCornering) {
     const cellCenter = gridToPx(currentCell);
     const xOffset = pacmanPos.x - cellCenter.x;
     const yOffset = pacmanPos.y - cellCenter.y;
-    const epsilon = 1;
+    const epsilon = 0.3;
 
     if (!isHorizontalDirection(direction)) {
       if (xOffset < -epsilon) newXPx += deltaPx;
@@ -130,7 +118,6 @@ function tick(timestamp: number) {
       }
       direction = newDirection;
       newDirection = null;
-      directionChangeTimestamp = null;
     }
   }
 
