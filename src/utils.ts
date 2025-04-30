@@ -56,8 +56,8 @@ export function getAllowedDirections(ghost: Ghost) {
 
   const directions = [Direction.Up, Direction.Down, Direction.Left, Direction.Right];
   const gDir = ghost.direction;
-  for (let i = 0; i < directions.length; i++) {
-    const dir = directions[i];
+
+  for (let dir of directions) {
     if (dir === Direction.Left && gDir === Direction.Right) continue;
     if (dir === Direction.Right && gDir === Direction.Left) continue;
     if (dir === Direction.Up && gDir === Direction.Down) continue;
@@ -94,4 +94,14 @@ export function teleportCharacter(direction: Direction, cell: GridPos) {
   }
 
   return null;
+}
+
+export function isThereCollision(ghosts: Ghost[], pacmanPos: PxPos) {
+  for (const ghost of ghosts) {
+    const distance = pointDistance(ghost.pos, pacmanPos);
+    if (distance <= 1) {
+      return true;
+    }
+  }
+  return false;
 }

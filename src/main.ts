@@ -5,11 +5,12 @@ import {
   DEBUG_GRID,
   GHOST_ANIMATION_FRAME_LENGTH,
   PACMAN_ANIMATION_FRAME_LENGTH,
+  PACMAN_DEATH_FRAME_LENGTH,
   board,
 } from './consts';
 import { ctx, SCREEN_HEIGHT, SCREEN_WIDTH } from './canvas';
 import { drawBoard } from './board';
-import { drawPacman, drawGhosts } from './sprites';
+import { drawPacman, drawGhosts, drawPacmanDeath } from './sprites';
 import {
   gridToPx,
   isHorizontalDir,
@@ -21,6 +22,7 @@ import {
   getAllowedDirections,
   randomInt,
   teleportCharacter,
+  isThereCollision,
 } from './utils';
 
 const debugEl = document.querySelector('#debug') as HTMLDivElement;
@@ -30,15 +32,20 @@ const pacmanPos = gridToPx({ x: 15, y: 23 }); // default
 pacmanPos.x += 3;
 let pacmanDir = Direction.Right;
 let newDirection: Direction | null = null;
-let pacmanFrame: 0 | 1 | 2 = 0;
-let ghostFrame: 0 | 1 = 0;
 let pause = false;
 let lastTimestamp: number | null = null;
+let pacmanFrame: 0 | 1 | 2 = 0;
+let ghostFrame: 0 | 1 = 0;
+// Death animation has 10 frames [0..10],
+// to this we add 10 fake frames to add a delay before death animation
+let deathFrame = -10;
 let lastPacmanFrameTimestamp = 0;
 let lastGhostFrameTimestamp = 0;
+let lastDeathFrameTimestamp = 0;
 let score = 0;
 let isCornering = false;
-// Max distance in pixels, for a point to be counted as being in the center of a cell
+// Max distance from cell center in pixels,
+// for a point to be counted as being in the center
 const epsilon = 0.3;
 
 // export const ghosts: Ghost[] = [
@@ -56,13 +63,12 @@ export const ghosts: Ghost[] = [
 
 // TODO different speed for Pacman and ghosts
 function moveGhosts(deltaPx: number, timestamp: number) {
-  for (let i = 0; i < ghosts.length; i++) {
-    const ghost = ghosts[i];
+  for (const ghost of ghosts) {
     if (ghost.lastChangedDirection === 0) ghost.lastChangedDirection = timestamp;
     const minDeltaT = (1 / CHARACTER_SPEED) * 1000 * 4;
 
     if (timestamp - ghost.lastChangedDirection > minDeltaT) {
-      let ghostGridPos: GridPos = pxToGrid(ghost.pos);
+      const ghostGridPos: GridPos = pxToGrid(ghost.pos);
       const teleported = teleportCharacter(ghost.direction, ghostGridPos);
       if (teleported !== null) {
         ghost.pos = teleported.pos;
@@ -216,7 +222,7 @@ document.addEventListener('keydown', (event) => {
       newDirection = Direction.Left;
       break;
   }
-  drawEverything();
+  drawEverything(false);
 });
 
 function tick(timestamp: number) {
@@ -226,33 +232,46 @@ function tick(timestamp: number) {
   const deltaPx = (CHARACTER_SPEED * deltaT) / 1000;
   lastTimestamp = timestamp;
 
-  const pacmanMoved = movePacman(deltaPx);
-  if (pacmanMoved && timestamp - lastPacmanFrameTimestamp > PACMAN_ANIMATION_FRAME_LENGTH) {
-    lastPacmanFrameTimestamp = timestamp;
-    pacmanFrame++;
-    if (pacmanFrame > 2) pacmanFrame = 0;
+  const isCollision = isThereCollision(ghosts, pacmanPos);
+  if (isCollision) {
+    if (timestamp - lastDeathFrameTimestamp > PACMAN_DEATH_FRAME_LENGTH) {
+      lastDeathFrameTimestamp = timestamp;
+      deathFrame++;
+      if (deathFrame > 10) pause = true;
+    }
+  } else {
+    const pacmanMoved = movePacman(deltaPx);
+    if (pacmanMoved && timestamp - lastPacmanFrameTimestamp > PACMAN_ANIMATION_FRAME_LENGTH) {
+      lastPacmanFrameTimestamp = timestamp;
+      pacmanFrame++;
+      if (pacmanFrame > 2) pacmanFrame = 0;
+    }
+
+    moveGhosts(deltaPx, timestamp);
+    if (timestamp - lastGhostFrameTimestamp > GHOST_ANIMATION_FRAME_LENGTH) {
+      lastGhostFrameTimestamp = timestamp;
+      ghostFrame++;
+      if (ghostFrame > 1) ghostFrame = 0;
+    }
   }
 
-  moveGhosts(deltaPx, timestamp);
-  if (timestamp - lastGhostFrameTimestamp > GHOST_ANIMATION_FRAME_LENGTH) {
-    lastGhostFrameTimestamp = timestamp;
-    ghostFrame++;
-    if (ghostFrame > 1) ghostFrame = 0;
-  }
-
-  drawEverything();
+  drawEverything(isCollision);
   requestAnimationFrame(tick);
 }
 
-function drawEverything() {
+function drawEverything(isCollision: boolean) {
   ctx.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
   drawBoard();
-  drawPacman(pacmanPos, pacmanDir, pacmanFrame);
-  drawGhosts(ghosts, ghostFrame);
+  if (isCollision && deathFrame >= 0) {
+    drawPacmanDeath(pacmanPos, deathFrame);
+  } else {
+    drawPacman(pacmanPos, pacmanDir, pacmanFrame);
+    drawGhosts(ghosts, ghostFrame);
+  }
   ctx.fillStyle = 'black';
   // Left margin to hide characters going into the left tunnel
   ctx.fillRect(0, 0, 16, SCREEN_HEIGHT);
 }
 
-drawEverything();
+drawEverything(false);
 requestAnimationFrame(tick);

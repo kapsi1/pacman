@@ -16,10 +16,10 @@ export type PxPos = {
 };
 
 export enum GhostName {
-  Blinky,
-  Pinky,
-  Inky,
-  Clyde,
+  Blinky = 'Blinky',
+  Pinky = 'Pinky',
+  Inky = 'Inky',
+  Clyde = 'Clyde',
 }
 
 export type Ghost = {

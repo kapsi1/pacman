@@ -18,12 +18,8 @@ for (let i = 0; i < data.length; i += 4) {
 }
 spriteCtx.putImageData(imageData, 0, 0);
 
-const pacmanSpriteSize = 13;
+const pacmanSize = 13;
 export function drawPacman(pos: PxPos, direction: Direction, frame: 0 | 1 | 2) {
-  let posX = pos.x;
-  let posY = pos.y;
-  const dotX = posX;
-  const dotY = posY;
   let srcX: number;
   let srcY: number;
   if (frame === 0) {
@@ -37,44 +33,45 @@ export function drawPacman(pos: PxPos, direction: Direction, frame: 0 | 1 | 2) {
     else if (direction === Direction.Up) srcY = 33;
     else srcY = 49;
   }
-  posX = Math.round(posX - pacmanSpriteSize / 2);
-  posY = Math.round(posY - pacmanSpriteSize / 2);
+  const destX = Math.round(pos.x - pacmanSize / 2);
+  const destY = Math.round(pos.y - pacmanSize / 2);
   if (DEBUG_PACMAN) {
     ctx.fillStyle = 'yellow';
-    ctx.fillRect(dotX - DOT_SIZE / 2, dotY - DOT_SIZE / 2, 2, 2);
+    ctx.fillRect(pos.x - DOT_SIZE / 2, pos.y - DOT_SIZE / 2, 2, 2);
     ctx.globalAlpha = 0.1;
   }
-  ctx.drawImage(
-    spriteCanvas,
-    srcX,
-    srcY,
-    pacmanSpriteSize,
-    pacmanSpriteSize,
-    posX,
-    posY,
-    pacmanSpriteSize,
-    pacmanSpriteSize
-  );
+  ctx.drawImage(spriteCanvas, srcX, srcY, pacmanSize, pacmanSize, destX, destY, pacmanSize, pacmanSize);
   if (DEBUG_PACMAN) ctx.globalAlpha = 1;
 }
 
-const ghostSpriteSize = 14;
+const ghostSize = 14;
 
-function drawGhost(ghost: GhostName, x: number, y: number, direction: Direction, frame: 0 | 1) {
+function drawGhost(ghost: GhostName, pos: PxPos, direction: Direction, frame: 0 | 1) {
   let srcX = 1;
   let srcY = 65;
-  if (direction === Direction.Left) srcX += 2 * (ghostSpriteSize + 2);
-  if (direction === Direction.Up) srcX += 4 * (ghostSpriteSize + 2);
-  if (direction === Direction.Down) srcX += 6 * (ghostSpriteSize + 2);
-  if (frame === 1) srcX += ghostSpriteSize + 2;
-  if (ghost === GhostName.Pinky) srcY += ghostSpriteSize + 2;
-  if (ghost === GhostName.Inky) srcY += 2 * (ghostSpriteSize + 2);
-  if (ghost === GhostName.Clyde) srcY += 3 * (ghostSpriteSize + 2);
-  y = Math.round(y - ghostSpriteSize / 2);
-  x = Math.round(x - ghostSpriteSize / 2);
-  ctx.drawImage(spriteCanvas, srcX, srcY, ghostSpriteSize, ghostSpriteSize, x, y, ghostSpriteSize, ghostSpriteSize);
+  if (direction === Direction.Left) srcX += 2 * (ghostSize + 2);
+  if (direction === Direction.Up) srcX += 4 * (ghostSize + 2);
+  if (direction === Direction.Down) srcX += 6 * (ghostSize + 2);
+  if (frame === 1) srcX += ghostSize + 2;
+  if (ghost === GhostName.Pinky) srcY += ghostSize + 2;
+  if (ghost === GhostName.Inky) srcY += 2 * (ghostSize + 2);
+  if (ghost === GhostName.Clyde) srcY += 3 * (ghostSize + 2);
+  const destX = Math.round(pos.x - ghostSize / 2);
+  const destY = Math.round(pos.y - ghostSize / 2);
+  ctx.drawImage(spriteCanvas, srcX, srcY, ghostSize, ghostSize, destX, destY, ghostSize, ghostSize);
 }
 
 export function drawGhosts(ghosts: Ghost[], frame: 0 | 1) {
-  ghosts.forEach((ghost) => drawGhost(ghost.name, ghost.pos.x, ghost.pos.y, ghost.direction, frame));
+  ghosts.forEach((ghost) => drawGhost(ghost.name, ghost.pos, ghost.direction, frame));
+}
+
+// Frame = 0..10
+const deathSize = 15;
+export function drawPacmanDeath(pos: PxPos, frame: number) {
+  if (frame < 0) return;
+  let srcX = 48 + (deathSize + 1) * frame;
+  let srcY = 1;
+  const destX = Math.round(pos.x - deathSize / 2);
+  const destY = Math.round(pos.y - deathSize / 2);
+  ctx.drawImage(spriteCanvas, srcX, srcY, deathSize, deathSize, destX, destY, deathSize, deathSize);
 }
