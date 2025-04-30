@@ -49,7 +49,7 @@ export function offsetPos(pos: PxPos, deltaPx: number, direction: Direction): Px
   return newPos;
 }
 
-export function getAllowedNeighbours(ghost: Ghost) {
+export function getAllowedDirections(ghost: Ghost) {
   const cell = pxToGrid(ghost.pos);
   const allowedDirections: Direction[] = [];
   let isIntersection = false;
@@ -79,7 +79,6 @@ export function randomInt(min: number, max: number) {
 export function teleportCharacter(direction: Direction, cell: GridPos) {
   let newPos: PxPos = { x: 0, y: 0 };
   let newCell: GridPos = { x: 0, y: 0 };
-  // console.log(direction, cell);
 
   // Teleport from left to right pipe
   if (direction === Direction.Left && cell.x === 0 && cell.y === 14) {

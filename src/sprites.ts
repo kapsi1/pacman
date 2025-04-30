@@ -2,9 +2,27 @@ import { ctx } from './canvas';
 import { Direction, Ghost, GhostName, PxPos } from './types';
 import { DOT_SIZE, DEBUG_PACMAN } from './consts';
 
-const sprites = document.images[0];
-const pacmanSpriteSize = 13;
+const spritesEl: HTMLImageElement = document.images[0];
+const spriteCanvas = document.createElement('canvas');
+spriteCanvas.style.setProperty('image-rendering', 'pixelated');
+const spriteCtx = spriteCanvas.getContext('2d') as CanvasRenderingContext2D;
+spriteCtx.imageSmoothingEnabled = false;
+spriteCtx.drawImage(spritesEl, 0, 0);
 
+const imageData = spriteCtx.getImageData(0, 0, 224, 211);
+const data = imageData.data;
+for (let i = 0; i < data.length; i += 4) {
+  // Make black pixels transparent
+  const isBlack = data[i] + data[i + 1] + data[i + 2] === 0;
+  if (isBlack) data[i + 3] = 0;
+  // data[i] = 50;
+}
+console.log(data);
+spriteCtx.putImageData(imageData, 0, 0);
+
+// document.body.appendChild(spriteCanvas);
+
+const pacmanSpriteSize = 13;
 export function drawPacman(pos: PxPos, direction: Direction, frame: 0 | 1 | 2) {
   let posX = pos.x;
   let posY = pos.y;
@@ -32,7 +50,8 @@ export function drawPacman(pos: PxPos, direction: Direction, frame: 0 | 1 | 2) {
     ctx.globalAlpha = 0.1;
   }
   ctx.drawImage(
-    sprites,
+    // spritesEl,
+    spriteCanvas,
     srcX,
     srcY,
     pacmanSpriteSize,
@@ -57,9 +76,10 @@ function drawGhost(ghost: GhostName, x: number, y: number, direction: Direction,
   if (ghost === GhostName.Pinky) srcY += ghostSpriteSize + 2;
   if (ghost === GhostName.Inky) srcY += 2 * (ghostSpriteSize + 2);
   if (ghost === GhostName.Clyde) srcY += 3 * (ghostSpriteSize + 2);
-  y = Math.round(y - ghostSpriteSize / 2) + 1;
-  x = Math.round(x - ghostSpriteSize / 2) + 1;
-  ctx.drawImage(sprites, srcX, srcY, ghostSpriteSize, ghostSpriteSize, x, y, ghostSpriteSize, ghostSpriteSize);
+  y = Math.round(y - ghostSpriteSize / 2);
+  x = Math.round(x - ghostSpriteSize / 2);
+  // ctx.drawImage(spritesEl, srcX, srcY, ghostSpriteSize, ghostSpriteSize, x, y, ghostSpriteSize, ghostSpriteSize);
+  ctx.drawImage(spriteCanvas, srcX, srcY, ghostSpriteSize, ghostSpriteSize, x, y, ghostSpriteSize, ghostSpriteSize);
 }
 
 export function drawGhosts(ghosts: Ghost[], frame: 0 | 1) {

@@ -17,7 +17,7 @@ import {
   getNextCell,
   isCellAllowed,
   offsetPos,
-  getAllowedNeighbours,
+  getAllowedDirections,
   randomInt,
   teleportCharacter,
 } from './utils';
@@ -25,9 +25,9 @@ import {
 const debugEl = document.querySelector('#debug') as HTMLDivElement;
 const scoreEl = document.querySelector('#score') as HTMLDivElement;
 
+const pacmanPos = gridToPx({ x: 13, y: 23 }); // default
 let pacmanDir = Direction.Right;
 let newDirection: Direction | null = null;
-const pacmanPos = gridToPx({ x: 13, y: 23 }); // default
 let pacmanFrame: 0 | 1 | 2 = 0;
 let ghostFrame: 0 | 1 = 0;
 let pause = false;
@@ -36,57 +36,55 @@ let lastPacmanFrameTimestamp = 0;
 let lastGhostFrameTimestamp = 0;
 let score = 0;
 let isCornering = false;
+// Max distance in pixels, for a point to be counted as being in the center of a cell
+const epsilon = 0.3;
 
+// export const ghosts: Ghost[] = [
+//   { name: GhostName.Blinky, pos: { x: 140, y: 116 }, direction: Direction.Left, lastChangedDirection: 0 },
+//   { name: GhostName.Inky, pos: { x: 112, y: 140 }, direction: Direction.Up, lastChangedDirection: 0 },
+//   { name: GhostName.Pinky, pos: { x: 128, y: 140 }, direction: Direction.Down, lastChangedDirection: 0 },
+//   { name: GhostName.Clyde, pos: { x: 144, y: 140 }, direction: Direction.Up, lastChangedDirection: 0 },
+// ];
 export const ghosts: Ghost[] = [
-  // { name: GhostName.Blinky, pos: { x: 127, y: 116 }, direction: Direction.Left, lastChangedDirection: 0 },
-  { name: GhostName.Blinky, pos: { x: 140, y: 116 }, direction: Direction.Left, lastChangedDirection: 0 },
-  // { name: GhostName.Blinky, pos: { x: 28, y: 68 }, direction: Direction.Right, lastChangedDirection: 0 },
-  // { name: GhostName.Blinky, pos: { x: 60, y: 140 }, direction: Direction.Left, lastChangedDirection: 0 },
-  // { name: GhostName.Blinky, pos: { x: 200, y: 140 }, direction: Direction.Right, lastChangedDirection: 0 },
-  { name: GhostName.Inky, pos: { x: 111, y: 140 }, direction: Direction.Up, lastChangedDirection: 0 },
-  { name: GhostName.Pinky, pos: { x: 127, y: 140 }, direction: Direction.Down, lastChangedDirection: 0 },
-  { name: GhostName.Clyde, pos: { x: 143, y: 140 }, direction: Direction.Up, lastChangedDirection: 0 },
+  { name: GhostName.Blinky, pos: { x: 120, y: 116 }, direction: Direction.Left, lastChangedDirection: 0 },
+  { name: GhostName.Inky, pos: { x: 136, y: 116 }, direction: Direction.Right, lastChangedDirection: 0 },
+  { name: GhostName.Pinky, pos: { x: 120, y: 164 }, direction: Direction.Left, lastChangedDirection: 0 },
+  { name: GhostName.Clyde, pos: { x: 136, y: 164 }, direction: Direction.Right, lastChangedDirection: 0 },
 ];
 
 // TODO different speed for Pacman and ghosts
 function moveGhosts(deltaPx: number, timestamp: number) {
-  const ghost = ghosts[0];
-  if (ghost.lastChangedDirection === 0) ghost.lastChangedDirection = timestamp;
-  const minDeltaT = (1 / CHARACTER_SPEED) * 1000 * 4;
+  for (let i = 0; i < ghosts.length; i++) {
+    const ghost = ghosts[i];
+    if (ghost.lastChangedDirection === 0) ghost.lastChangedDirection = timestamp;
+    const minDeltaT = (1 / CHARACTER_SPEED) * 1000 * 4;
 
-  if (timestamp - ghost.lastChangedDirection > minDeltaT) {
-    let ghostGridPos: GridPos = pxToGrid(ghost.pos);
-    const teleported = teleportCharacter(ghost.direction, ghostGridPos);
-    if (teleported !== null) {
-      ghost.pos = teleported.pos;
-      console.log(ghost.pos);
-    } else {
-      const cellMiddle: PxPos = gridToPx(ghostGridPos);
-      const distanceToCellMiddle = pointDistance(ghost.pos, cellMiddle);
-      // console.log(1, 'ghost.pos', ghost.pos, 'distanceToCellMiddle', distanceToCellMiddle);
-      if (distanceToCellMiddle <= 1) {
-        const { isIntersection, allowedDirections } = getAllowedNeighbours(ghost);
-        // console.log(2, 'isIntersection', isIntersection, 'allowedDirections', allowedDirections);
+    if (timestamp - ghost.lastChangedDirection > minDeltaT) {
+      let ghostGridPos: GridPos = pxToGrid(ghost.pos);
+      const teleported = teleportCharacter(ghost.direction, ghostGridPos);
+      if (teleported !== null) {
+        ghost.pos = teleported.pos;
+      } else {
+        const cellMiddle: PxPos = gridToPx(ghostGridPos);
+        const distanceToCellMiddle = pointDistance(ghost.pos, cellMiddle);
+        if (distanceToCellMiddle <= epsilon) {
+          const { isIntersection, allowedDirections } = getAllowedDirections(ghost);
 
-        if (isIntersection) {
-          const randomDir = allowedDirections[randomInt(0, allowedDirections.length)];
-          console.log(
-            'allowedDirections',
-            allowedDirections,
-            `${ghost.direction} -> ${randomDir}`,
-            'deltaT',
-            timestamp - ghost.lastChangedDirection,
-            'deltaPx',
-            deltaPx
-          );
-
-          ghost.direction = randomDir;
-          ghost.lastChangedDirection = timestamp;
+          if (isIntersection) {
+            const randomDir = allowedDirections[randomInt(0, allowedDirections.length)];
+            ghost.direction = randomDir;
+            ghost.lastChangedDirection = timestamp;
+            if (isHorizontalDir(ghost.direction)) {
+              ghost.pos.y = Math.round(ghost.pos.y);
+            } else {
+              ghost.pos.x = Math.round(ghost.pos.x);
+            }
+          }
         }
       }
     }
+    ghost.pos = offsetPos(ghost.pos, deltaPx, ghost.direction);
   }
-  ghost.pos = offsetPos(ghost.pos, deltaPx, ghost.direction);
 }
 
 document.addEventListener('keydown', (event) => {
@@ -140,7 +138,6 @@ function tick(timestamp: number) {
     const cellCenter = gridToPx(currentCell);
     const xOffset = pacmanPos.x - cellCenter.x;
     const yOffset = pacmanPos.y - cellCenter.y;
-    const epsilon = 0.3;
 
     if (!isHorizontalDir(pacmanDir)) {
       if (xOffset < -epsilon) newPos.x += deltaPx;
@@ -189,39 +186,39 @@ function tick(timestamp: number) {
   (window as any).currentCell = pxToGrid(pacmanPos);
   (window as any).nextCell = nextCell;
 
-  debugEl.innerText =
-    'direction: ' +
-    pacmanDir +
-    '\nnewDirection: ' +
-    newDirection +
-    '\n      pos: (' +
-    pacmanPos.x.toFixed(4) +
-    ', ' +
-    pacmanPos.y.toFixed(4) +
-    ')\n     cell: (' +
-    currentCell.x +
-    ', ' +
-    currentCell.y +
-    ') "' +
-    (board[currentCell.y] ? board[currentCell.y][currentCell.x] : null) +
-    '"\n  new pos: (' +
-    newPos.x.toFixed(4) +
-    ', ' +
-    newPos.y.toFixed(4) +
-    ')' +
-    '\n new cell: (' +
-    newCell.x +
-    ', ' +
-    newCell.y +
-    ') "' +
-    (board[newCell.y] ? board[newCell.y][newCell.x] : null) +
-    '"\nnext cell: (' +
-    nextCell.x +
-    ', ' +
-    nextCell.y +
-    ') "' +
-    (board[nextCell.y] ? board[nextCell.y][nextCell.x] : null) +
-    '"';
+  // debugEl.innerText =
+  //   'direction: ' +
+  //   pacmanDir +
+  //   '\nnewDirection: ' +
+  //   newDirection +
+  //   '\n      pos: (' +
+  //   pacmanPos.x.toFixed(4) +
+  //   ', ' +
+  //   pacmanPos.y.toFixed(4) +
+  //   ')\n     cell: (' +
+  //   currentCell.x +
+  //   ', ' +
+  //   currentCell.y +
+  //   ') "' +
+  //   (board[currentCell.y] ? board[currentCell.y][currentCell.x] : null) +
+  //   '"\n  new pos: (' +
+  //   newPos.x.toFixed(4) +
+  //   ', ' +
+  //   newPos.y.toFixed(4) +
+  //   ')' +
+  //   '\n new cell: (' +
+  //   newCell.x +
+  //   ', ' +
+  //   newCell.y +
+  //   ') "' +
+  //   (board[newCell.y] ? board[newCell.y][newCell.x] : null) +
+  //   '"\nnext cell: (' +
+  //   nextCell.x +
+  //   ', ' +
+  //   nextCell.y +
+  //   ') "' +
+  //   (board[nextCell.y] ? board[nextCell.y][nextCell.x] : null) +
+  //   '"';
 
   let isAllowed = true;
   const isNextCellAllowed = isCellAllowed(nextCell);
@@ -278,7 +275,7 @@ function drawEverything() {
   drawPacman(pacmanPos, pacmanDir, pacmanFrame);
   drawGhosts(ghosts, ghostFrame);
   ctx.fillStyle = 'black';
-  //left margin to hide Pacman going into left tunnel
+  // Left margin to hide characters going into the left tunnel
   ctx.fillRect(0, 0, 16, SCREEN_HEIGHT);
 }
 
