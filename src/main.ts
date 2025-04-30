@@ -57,10 +57,7 @@ document.addEventListener('keydown', (event) => {
       newDirection = Direction.Left;
       break;
   }
-  ctx.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-  drawBoard();
-  drawPacman(pacmanPos, direction, pacmanFrame);
-  drawGhosts(ghostFrame);
+  drawEverything();
 });
 
 function tick(timestamp: number) {
@@ -70,13 +67,12 @@ function tick(timestamp: number) {
   const deltaPx = (CHARACTER_SPEED * deltaT) / 1000;
   lastTimestamp = timestamp;
 
-  let newXPx = pacmanPos.x;
-  let newYPx = pacmanPos.y;
+  let newPos = { x: pacmanPos.x, y: pacmanPos.y };
 
-  if (direction === Direction.Right) newXPx += deltaPx;
-  if (direction === Direction.Left) newXPx -= deltaPx;
-  if (direction === Direction.Down) newYPx += deltaPx;
-  if (direction === Direction.Up) newYPx -= deltaPx;
+  if (direction === Direction.Right) newPos.x += deltaPx;
+  if (direction === Direction.Left) newPos.x -= deltaPx;
+  if (direction === Direction.Down) newPos.y += deltaPx;
+  if (direction === Direction.Up) newPos.y -= deltaPx;
 
   const currentCell = pxToGrid(pacmanPos);
 
@@ -89,17 +85,17 @@ function tick(timestamp: number) {
     const epsilon = 0.3;
 
     if (!isHorizontalDirection(direction)) {
-      if (xOffset < -epsilon) newXPx += deltaPx;
-      if (xOffset > epsilon) newXPx -= deltaPx;
+      if (xOffset < -epsilon) newPos.x += deltaPx;
+      if (xOffset > epsilon) newPos.x -= deltaPx;
       if (xOffset >= -epsilon && xOffset <= epsilon) {
-        newXPx = Math.round(newXPx);
+        newPos.x = Math.round(newPos.x);
         isCornering = false;
       }
     } else {
-      if (yOffset < -epsilon) newYPx += deltaPx;
-      if (yOffset > epsilon) newYPx -= deltaPx;
+      if (yOffset < -epsilon) newPos.y += deltaPx;
+      if (yOffset > epsilon) newPos.y -= deltaPx;
       if (yOffset >= -epsilon && yOffset <= epsilon) {
-        newYPx = Math.round(newYPx);
+        newPos.y = Math.round(newPos.y);
         isCornering = false;
       }
     }
@@ -123,8 +119,18 @@ function tick(timestamp: number) {
 
   // newCell - cell after moving delta pixels
   // nextCell - cell neighbouring newCell in the current direction
-  const newPos = { x: newXPx, y: newYPx };
-  const newCell = pxToGrid(newPos);
+  let newCell = pxToGrid(newPos);
+
+  // Teleport from left to right pipe
+  if (direction === Direction.Left && newCell.x === 0 && newCell.y === 14) {
+    newPos = { x: 252, y: 140 };
+    newCell = { x: 31, y: 14 };
+  }
+  // Teleport from right to left pipe
+  if (direction === Direction.Right && newCell.x === 31 && newCell.y === 14) {
+    newPos = { x: 0, y: 140 };
+    newCell = { x: 0, y: 14 };
+  }
   const nextCell = getNextCell(newCell, direction);
 
   (window as any).currentCell = pxToGrid(pacmanPos);
@@ -146,9 +152,9 @@ function tick(timestamp: number) {
     ') "' +
     (board[currentCell.y] ? board[currentCell.y][currentCell.x] : null) +
     '"\n  new pos: (' +
-    newXPx.toFixed(4) +
+    newPos.x.toFixed(4) +
     ', ' +
-    newYPx.toFixed(4) +
+    newPos.y.toFixed(4) +
     ')' +
     '\n new cell: (' +
     newCell.x +
@@ -172,8 +178,8 @@ function tick(timestamp: number) {
   }
 
   if (isAllowed) {
-    pacmanPos.x = newXPx;
-    pacmanPos.y = newYPx;
+    pacmanPos.x = newPos.x;
+    pacmanPos.y = newPos.y;
 
     let scoreChanged = false;
     if (board[newCell.y] && board[newCell.y][newCell.x] === '.') {
@@ -208,15 +214,19 @@ function tick(timestamp: number) {
     ghostFrame++;
     if (ghostFrame > 1) ghostFrame = 0;
   }
+  drawEverything();
+  requestAnimationFrame(tick);
+}
 
+function drawEverything() {
   ctx.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
   drawBoard();
   drawPacman(pacmanPos, direction, pacmanFrame);
   drawGhosts(ghostFrame);
-  requestAnimationFrame(tick);
+  ctx.fillStyle = 'black';
+  //left margin to hide Pacman going into left tunnel
+  ctx.fillRect(0, 0, 16, SCREEN_HEIGHT);
 }
 
-drawBoard();
-drawPacman(pacmanPos, Direction.Right, pacmanFrame);
-drawGhosts(ghostFrame);
+drawEverything();
 requestAnimationFrame(tick);

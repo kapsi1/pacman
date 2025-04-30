@@ -16,9 +16,9 @@ img {
 
 #background {
   height: 100%;
-  /* height: 149%;
-  margin-left: 17px;
-  margin-top: 4px; */
+  margin-left: 38px;
+  /* debug left margin */
+  /* margin-left: -105px; */
 }
 
 #sprites {
@@ -32,6 +32,7 @@ img {
   position: absolute;
   height: 100%;
   /* width: 100%; */
+  /* margin-left: 42px; */
 }
 
 #debug {

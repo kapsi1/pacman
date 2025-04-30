@@ -60,10 +60,10 @@ export type Ghost = {
 
 const ghostSpriteSize = 14;
 export const ghosts: Ghost[] = [
-  { name: GhostName.Blinky, pos: [111, 115], direction: Direction.Left },
-  { name: GhostName.Inky, pos: [95, 140], direction: Direction.Up },
-  { name: GhostName.Pinky, pos: [111, 140], direction: Direction.Down },
-  { name: GhostName.Clyde, pos: [127, 140], direction: Direction.Up },
+  { name: GhostName.Blinky, pos: [127, 115], direction: Direction.Left },
+  { name: GhostName.Inky, pos: [111, 140], direction: Direction.Up },
+  { name: GhostName.Pinky, pos: [127, 140], direction: Direction.Down },
+  { name: GhostName.Clyde, pos: [143, 140], direction: Direction.Up },
 ];
 
 export function drawGhost(ghost: GhostName, x: number, y: number, direction: Direction, frame: 0 | 1) {
