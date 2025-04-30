@@ -1,4 +1,4 @@
-import { Direction } from './types';
+import { Direction, Ghost, GhostName, GridPos, PxPos } from './types';
 import {
   CELL_SIZE,
   CHARACTER_SPEED,
@@ -9,12 +9,23 @@ import {
 import { ctx, SCREEN_HEIGHT, SCREEN_WIDTH } from './canvas';
 import { drawBoard } from './board';
 import { drawPacman, drawGhosts } from './sprites';
-import { gridToPx, isHorizontalDirection, pxToGrid, pointDistance, getNextCell, isCellAllowed } from './utils';
+import {
+  gridToPx,
+  isHorizontalDir,
+  pxToGrid,
+  pointDistance,
+  getNextCell,
+  isCellAllowed,
+  offsetPos,
+  getAllowedNeighbours,
+  randomInt,
+  teleportCharacter,
+} from './utils';
 
 const debugEl = document.querySelector('#debug') as HTMLDivElement;
 const scoreEl = document.querySelector('#score') as HTMLDivElement;
 
-let direction = Direction.Right;
+let pacmanDir = Direction.Right;
 let newDirection: Direction | null = null;
 const pacmanPos = gridToPx({ x: 13, y: 23 }); // default
 let pacmanFrame: 0 | 1 | 2 = 0;
@@ -25,6 +36,58 @@ let lastPacmanFrameTimestamp = 0;
 let lastGhostFrameTimestamp = 0;
 let score = 0;
 let isCornering = false;
+
+export const ghosts: Ghost[] = [
+  // { name: GhostName.Blinky, pos: { x: 127, y: 116 }, direction: Direction.Left, lastChangedDirection: 0 },
+  { name: GhostName.Blinky, pos: { x: 140, y: 116 }, direction: Direction.Left, lastChangedDirection: 0 },
+  // { name: GhostName.Blinky, pos: { x: 28, y: 68 }, direction: Direction.Right, lastChangedDirection: 0 },
+  // { name: GhostName.Blinky, pos: { x: 60, y: 140 }, direction: Direction.Left, lastChangedDirection: 0 },
+  // { name: GhostName.Blinky, pos: { x: 200, y: 140 }, direction: Direction.Right, lastChangedDirection: 0 },
+  { name: GhostName.Inky, pos: { x: 111, y: 140 }, direction: Direction.Up, lastChangedDirection: 0 },
+  { name: GhostName.Pinky, pos: { x: 127, y: 140 }, direction: Direction.Down, lastChangedDirection: 0 },
+  { name: GhostName.Clyde, pos: { x: 143, y: 140 }, direction: Direction.Up, lastChangedDirection: 0 },
+];
+
+// TODO different speed for Pacman and ghosts
+function moveGhosts(deltaPx: number, timestamp: number) {
+  const ghost = ghosts[0];
+  if (ghost.lastChangedDirection === 0) ghost.lastChangedDirection = timestamp;
+  const minDeltaT = (1 / CHARACTER_SPEED) * 1000 * 4;
+
+  if (timestamp - ghost.lastChangedDirection > minDeltaT) {
+    let ghostGridPos: GridPos = pxToGrid(ghost.pos);
+    const teleported = teleportCharacter(ghost.direction, ghostGridPos);
+    if (teleported !== null) {
+      ghost.pos = teleported.pos;
+      console.log(ghost.pos);
+    } else {
+      const cellMiddle: PxPos = gridToPx(ghostGridPos);
+      const distanceToCellMiddle = pointDistance(ghost.pos, cellMiddle);
+      // console.log(1, 'ghost.pos', ghost.pos, 'distanceToCellMiddle', distanceToCellMiddle);
+      if (distanceToCellMiddle <= 1) {
+        const { isIntersection, allowedDirections } = getAllowedNeighbours(ghost);
+        // console.log(2, 'isIntersection', isIntersection, 'allowedDirections', allowedDirections);
+
+        if (isIntersection) {
+          const randomDir = allowedDirections[randomInt(0, allowedDirections.length)];
+          console.log(
+            'allowedDirections',
+            allowedDirections,
+            `${ghost.direction} -> ${randomDir}`,
+            'deltaT',
+            timestamp - ghost.lastChangedDirection,
+            'deltaPx',
+            deltaPx
+          );
+
+          ghost.direction = randomDir;
+          ghost.lastChangedDirection = timestamp;
+        }
+      }
+    }
+  }
+  ghost.pos = offsetPos(ghost.pos, deltaPx, ghost.direction);
+}
 
 document.addEventListener('keydown', (event) => {
   switch (event.key) {
@@ -38,22 +101,22 @@ document.addEventListener('keydown', (event) => {
       break;
     case 'w':
     case 'ArrowUp':
-      if (direction === Direction.Up) return;
+      if (pacmanDir === Direction.Up) return;
       newDirection = Direction.Up;
       break;
     case 's':
     case 'ArrowDown':
-      if (direction === Direction.Down) return;
+      if (pacmanDir === Direction.Down) return;
       newDirection = Direction.Down;
       break;
     case 'd':
     case 'ArrowRight':
-      if (direction === Direction.Right) return;
+      if (pacmanDir === Direction.Right) return;
       newDirection = Direction.Right;
       break;
     case 'a':
     case 'ArrowLeft':
-      if (direction === Direction.Left) return;
+      if (pacmanDir === Direction.Left) return;
       newDirection = Direction.Left;
       break;
   }
@@ -68,12 +131,7 @@ function tick(timestamp: number) {
   lastTimestamp = timestamp;
 
   let newPos = { x: pacmanPos.x, y: pacmanPos.y };
-
-  if (direction === Direction.Right) newPos.x += deltaPx;
-  if (direction === Direction.Left) newPos.x -= deltaPx;
-  if (direction === Direction.Down) newPos.y += deltaPx;
-  if (direction === Direction.Up) newPos.y -= deltaPx;
-
+  newPos = offsetPos(newPos, deltaPx, pacmanDir);
   const currentCell = pxToGrid(pacmanPos);
 
   // During cornering Pacman moves diagonally until he reaches
@@ -84,7 +142,7 @@ function tick(timestamp: number) {
     const yOffset = pacmanPos.y - cellCenter.y;
     const epsilon = 0.3;
 
-    if (!isHorizontalDirection(direction)) {
+    if (!isHorizontalDir(pacmanDir)) {
       if (xOffset < -epsilon) newPos.x += deltaPx;
       if (xOffset > epsilon) newPos.x -= deltaPx;
       if (xOffset >= -epsilon && xOffset <= epsilon) {
@@ -107,12 +165,12 @@ function tick(timestamp: number) {
 
     if (isAllowed) {
       if (
-        (isHorizontalDirection(direction) && !isHorizontalDirection(newDirection)) ||
-        (!isHorizontalDirection(direction) && isHorizontalDirection(newDirection))
+        (isHorizontalDir(pacmanDir) && !isHorizontalDir(newDirection)) ||
+        (!isHorizontalDir(pacmanDir) && isHorizontalDir(newDirection))
       ) {
         isCornering = true;
       }
-      direction = newDirection;
+      pacmanDir = newDirection;
       newDirection = null;
     }
   }
@@ -121,24 +179,19 @@ function tick(timestamp: number) {
   // nextCell - cell neighbouring newCell in the current direction
   let newCell = pxToGrid(newPos);
 
-  // Teleport from left to right pipe
-  if (direction === Direction.Left && newCell.x === 0 && newCell.y === 14) {
-    newPos = { x: 252, y: 140 };
-    newCell = { x: 31, y: 14 };
+  const teleported = teleportCharacter(pacmanDir, newCell);
+  if (teleported !== null) {
+    newPos = teleported.pos;
+    newCell = teleported.cell;
   }
-  // Teleport from right to left pipe
-  if (direction === Direction.Right && newCell.x === 31 && newCell.y === 14) {
-    newPos = { x: 0, y: 140 };
-    newCell = { x: 0, y: 14 };
-  }
-  const nextCell = getNextCell(newCell, direction);
+  const nextCell = getNextCell(newCell, pacmanDir);
 
   (window as any).currentCell = pxToGrid(pacmanPos);
   (window as any).nextCell = nextCell;
 
   debugEl.innerText =
     'direction: ' +
-    direction +
+    pacmanDir +
     '\nnewDirection: ' +
     newDirection +
     '\n      pos: (' +
@@ -196,13 +249,12 @@ function tick(timestamp: number) {
       board[newCell.y] = row.substring(0, newCell.x) + ' ' + row.substring(newCell.x + 1);
     }
   } else {
-    if (isHorizontalDirection(direction)) {
+    if (isHorizontalDir(pacmanDir)) {
       pacmanPos.x = Math.round(pacmanPos.x);
     } else {
       pacmanPos.y = Math.round(pacmanPos.y);
     }
   }
-
   if (isAllowed && timestamp - lastPacmanFrameTimestamp > PACMAN_ANIMATION_FRAME_LENGTH) {
     lastPacmanFrameTimestamp = timestamp;
     pacmanFrame++;
@@ -214,6 +266,8 @@ function tick(timestamp: number) {
     ghostFrame++;
     if (ghostFrame > 1) ghostFrame = 0;
   }
+  moveGhosts(deltaPx, timestamp);
+
   drawEverything();
   requestAnimationFrame(tick);
 }
@@ -221,8 +275,8 @@ function tick(timestamp: number) {
 function drawEverything() {
   ctx.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
   drawBoard();
-  drawPacman(pacmanPos, direction, pacmanFrame);
-  drawGhosts(ghostFrame);
+  drawPacman(pacmanPos, pacmanDir, pacmanFrame);
+  drawGhosts(ghosts, ghostFrame);
   ctx.fillStyle = 'black';
   //left margin to hide Pacman going into left tunnel
   ctx.fillRect(0, 0, 16, SCREEN_HEIGHT);

@@ -16,8 +16,8 @@ export const DEBUG_DOTS = false;
 export const DRAW_DOTS = true;
 // export const DRAW_DOTS = false;
 
-export const DEBUG_GRID = false;
-// export const DEBUG_GRID = true;
+// export const DEBUG_GRID = false;
+export const DEBUG_GRID = true;
 
 export const DEBUG_PACMAN = false;
 // export const DEBUG_PACMAN = true;

@@ -14,3 +14,17 @@ export type PxPos = {
   x: number;
   y: number;
 };
+
+export enum GhostName {
+  Blinky,
+  Pinky,
+  Inky,
+  Clyde,
+}
+
+export type Ghost = {
+  name: GhostName;
+  pos: PxPos;
+  direction: Direction;
+  lastChangedDirection: number;
+};

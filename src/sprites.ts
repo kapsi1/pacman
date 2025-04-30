@@ -1,5 +1,5 @@
 import { ctx } from './canvas';
-import { Direction, PxPos } from './types';
+import { Direction, Ghost, GhostName, PxPos } from './types';
 import { DOT_SIZE, DEBUG_PACMAN } from './consts';
 
 const sprites = document.images[0];
@@ -45,28 +45,9 @@ export function drawPacman(pos: PxPos, direction: Direction, frame: 0 | 1 | 2) {
   if (DEBUG_PACMAN) ctx.globalAlpha = 1;
 }
 
-export enum GhostName {
-  Blinky,
-  Pinky,
-  Inky,
-  Clyde,
-}
-
-export type Ghost = {
-  name: GhostName;
-  pos: number[];
-  direction: Direction;
-};
-
 const ghostSpriteSize = 14;
-export const ghosts: Ghost[] = [
-  { name: GhostName.Blinky, pos: [127, 115], direction: Direction.Left },
-  { name: GhostName.Inky, pos: [111, 140], direction: Direction.Up },
-  { name: GhostName.Pinky, pos: [127, 140], direction: Direction.Down },
-  { name: GhostName.Clyde, pos: [143, 140], direction: Direction.Up },
-];
 
-export function drawGhost(ghost: GhostName, x: number, y: number, direction: Direction, frame: 0 | 1) {
+function drawGhost(ghost: GhostName, x: number, y: number, direction: Direction, frame: 0 | 1) {
   let srcX = 1;
   let srcY = 65;
   if (direction === Direction.Left) srcX += 2 * (ghostSpriteSize + 2);
@@ -81,6 +62,6 @@ export function drawGhost(ghost: GhostName, x: number, y: number, direction: Dir
   ctx.drawImage(sprites, srcX, srcY, ghostSpriteSize, ghostSpriteSize, x, y, ghostSpriteSize, ghostSpriteSize);
 }
 
-export function drawGhosts(frame: 0 | 1) {
-  ghosts.forEach((ghost) => drawGhost(ghost.name, ghost.pos[0], ghost.pos[1], ghost.direction, frame));
+export function drawGhosts(ghosts: Ghost[], frame: 0 | 1) {
+  ghosts.forEach((ghost) => drawGhost(ghost.name, ghost.pos.x, ghost.pos.y, ghost.direction, frame));
 }

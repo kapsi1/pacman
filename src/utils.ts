@@ -1,9 +1,8 @@
 import { TOP_MARGIN } from './canvas';
 import { WALL_MARGIN, CELL_SIZE, board } from './consts';
-import { Direction, GridPos, PxPos } from './types';
+import { Direction, Ghost, GridPos, PxPos } from './types';
 
-export const isHorizontalDirection = (direction: Direction) =>
-  direction === Direction.Left || direction === Direction.Right;
+export const isHorizontalDir = (direction: Direction) => direction === Direction.Left || direction === Direction.Right;
 
 // Returns middle point of the cell
 export function gridToPx(gridPos: GridPos): PxPos {
@@ -39,4 +38,61 @@ export function getNextCell(gridPos: GridPos, direction: Direction) {
   else if (direction === Direction.Left) x--;
   else if (direction === Direction.Right) x++;
   return { x, y };
+}
+
+export function offsetPos(pos: PxPos, deltaPx: number, direction: Direction): PxPos {
+  const newPos = { x: pos.x, y: pos.y };
+  if (direction === Direction.Right) newPos.x += deltaPx;
+  if (direction === Direction.Left) newPos.x -= deltaPx;
+  if (direction === Direction.Down) newPos.y += deltaPx;
+  if (direction === Direction.Up) newPos.y -= deltaPx;
+  return newPos;
+}
+
+export function getAllowedNeighbours(ghost: Ghost) {
+  const cell = pxToGrid(ghost.pos);
+  const allowedDirections: Direction[] = [];
+  let isIntersection = false;
+
+  const directions = [Direction.Up, Direction.Down, Direction.Left, Direction.Right];
+  const gDir = ghost.direction;
+  for (let i = 0; i < directions.length; i++) {
+    const dir = directions[i];
+    if (dir === Direction.Left && gDir === Direction.Right) continue;
+    if (dir === Direction.Right && gDir === Direction.Left) continue;
+    if (dir === Direction.Up && gDir === Direction.Down) continue;
+    if (dir === Direction.Down && gDir === Direction.Up) continue;
+    const nextCell = getNextCell(cell, dir);
+    if (isCellAllowed(nextCell)) {
+      if (isHorizontalDir(dir) && !isHorizontalDir(gDir)) isIntersection = true;
+      if (!isHorizontalDir(dir) && isHorizontalDir(gDir)) isIntersection = true;
+      allowedDirections.push(dir);
+    }
+  }
+  return { isIntersection, allowedDirections };
+}
+
+export function randomInt(min: number, max: number) {
+  return Math.floor(Math.random() * max) + min;
+}
+
+export function teleportCharacter(direction: Direction, cell: GridPos) {
+  let newPos: PxPos = { x: 0, y: 0 };
+  let newCell: GridPos = { x: 0, y: 0 };
+  // console.log(direction, cell);
+
+  // Teleport from left to right pipe
+  if (direction === Direction.Left && cell.x === 0 && cell.y === 14) {
+    newPos = { x: 252, y: 140 };
+    newCell = { x: 31, y: 14 };
+    return { pos: newPos, cell: newCell };
+  }
+  // Teleport from right to left pipe
+  if (direction === Direction.Right && cell.x === 31 && cell.y === 14) {
+    newPos = { x: 0, y: 140 };
+    newCell = { x: 0, y: 14 };
+    return { pos: newPos, cell: newCell };
+  }
+
+  return null;
 }

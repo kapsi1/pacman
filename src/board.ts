@@ -48,7 +48,7 @@ function drawDots() {
         ctx.fillStyle = char === '#' ? '#ba000045' : '#00a3184a';
         ctx.fillRect(dotX - CELL_SIZE / 2, dotY - CELL_SIZE / 2, CELL_SIZE, CELL_SIZE);
         ctx.fillStyle = 'white';
-        if (x === 0 || x === row.length - 1) ctx.fillText(y.toString(), dotX, dotY);
+        if (x === 2 || x === row.length - 3) ctx.fillText(y.toString(), dotX, dotY);
         if (x > 0 && (y === board.length - 1 || y === 0)) ctx.fillText(x.toString(), dotX, dotY);
       }
     });
