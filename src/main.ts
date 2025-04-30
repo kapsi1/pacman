@@ -2,6 +2,7 @@ import { Direction, Ghost, GhostName, GridPos, PxPos } from './types';
 import {
   CELL_SIZE,
   CHARACTER_SPEED,
+  DEBUG_GRID,
   GHOST_ANIMATION_FRAME_LENGTH,
   PACMAN_ANIMATION_FRAME_LENGTH,
   board,
@@ -25,7 +26,8 @@ import {
 const debugEl = document.querySelector('#debug') as HTMLDivElement;
 const scoreEl = document.querySelector('#score') as HTMLDivElement;
 
-const pacmanPos = gridToPx({ x: 13, y: 23 }); // default
+const pacmanPos = gridToPx({ x: 15, y: 23 }); // default
+pacmanPos.x += 3;
 let pacmanDir = Direction.Right;
 let newDirection: Direction | null = null;
 let pacmanFrame: 0 | 1 | 2 = 0;
@@ -87,47 +89,7 @@ function moveGhosts(deltaPx: number, timestamp: number) {
   }
 }
 
-document.addEventListener('keydown', (event) => {
-  switch (event.key) {
-    case '`':
-    case ' ':
-      pause = !pause;
-      if (!pause) {
-        lastTimestamp = null;
-        requestAnimationFrame(tick);
-      }
-      break;
-    case 'w':
-    case 'ArrowUp':
-      if (pacmanDir === Direction.Up) return;
-      newDirection = Direction.Up;
-      break;
-    case 's':
-    case 'ArrowDown':
-      if (pacmanDir === Direction.Down) return;
-      newDirection = Direction.Down;
-      break;
-    case 'd':
-    case 'ArrowRight':
-      if (pacmanDir === Direction.Right) return;
-      newDirection = Direction.Right;
-      break;
-    case 'a':
-    case 'ArrowLeft':
-      if (pacmanDir === Direction.Left) return;
-      newDirection = Direction.Left;
-      break;
-  }
-  drawEverything();
-});
-
-function tick(timestamp: number) {
-  if (pause) return;
-  if (lastTimestamp === null) lastTimestamp = timestamp;
-  const deltaT = timestamp - lastTimestamp;
-  const deltaPx = (CHARACTER_SPEED * deltaT) / 1000;
-  lastTimestamp = timestamp;
-
+function movePacman(deltaPx: number) {
   let newPos = { x: pacmanPos.x, y: pacmanPos.y };
   newPos = offsetPos(newPos, deltaPx, pacmanDir);
   const currentCell = pxToGrid(pacmanPos);
@@ -183,42 +145,10 @@ function tick(timestamp: number) {
   }
   const nextCell = getNextCell(newCell, pacmanDir);
 
-  (window as any).currentCell = pxToGrid(pacmanPos);
-  (window as any).nextCell = nextCell;
-
-  // debugEl.innerText =
-  //   'direction: ' +
-  //   pacmanDir +
-  //   '\nnewDirection: ' +
-  //   newDirection +
-  //   '\n      pos: (' +
-  //   pacmanPos.x.toFixed(4) +
-  //   ', ' +
-  //   pacmanPos.y.toFixed(4) +
-  //   ')\n     cell: (' +
-  //   currentCell.x +
-  //   ', ' +
-  //   currentCell.y +
-  //   ') "' +
-  //   (board[currentCell.y] ? board[currentCell.y][currentCell.x] : null) +
-  //   '"\n  new pos: (' +
-  //   newPos.x.toFixed(4) +
-  //   ', ' +
-  //   newPos.y.toFixed(4) +
-  //   ')' +
-  //   '\n new cell: (' +
-  //   newCell.x +
-  //   ', ' +
-  //   newCell.y +
-  //   ') "' +
-  //   (board[newCell.y] ? board[newCell.y][newCell.x] : null) +
-  //   '"\nnext cell: (' +
-  //   nextCell.x +
-  //   ', ' +
-  //   nextCell.y +
-  //   ') "' +
-  //   (board[nextCell.y] ? board[nextCell.y][nextCell.x] : null) +
-  //   '"';
+  if (DEBUG_GRID) {
+    (window as any).currentCell = pxToGrid(pacmanPos);
+    (window as any).nextCell = nextCell;
+  }
 
   let isAllowed = true;
   const isNextCellAllowed = isCellAllowed(nextCell);
@@ -252,18 +182,63 @@ function tick(timestamp: number) {
       pacmanPos.y = Math.round(pacmanPos.y);
     }
   }
-  if (isAllowed && timestamp - lastPacmanFrameTimestamp > PACMAN_ANIMATION_FRAME_LENGTH) {
+  return isAllowed;
+}
+
+document.addEventListener('keydown', (event) => {
+  switch (event.key) {
+    case '`':
+    case ' ':
+      pause = !pause;
+      if (!pause) {
+        lastTimestamp = null;
+        requestAnimationFrame(tick);
+      }
+      break;
+    case 'w':
+    case 'ArrowUp':
+      if (pacmanDir === Direction.Up) return;
+      newDirection = Direction.Up;
+      break;
+    case 's':
+    case 'ArrowDown':
+      if (pacmanDir === Direction.Down) return;
+      newDirection = Direction.Down;
+      break;
+    case 'd':
+    case 'ArrowRight':
+      if (pacmanDir === Direction.Right) return;
+      newDirection = Direction.Right;
+      break;
+    case 'a':
+    case 'ArrowLeft':
+      if (pacmanDir === Direction.Left) return;
+      newDirection = Direction.Left;
+      break;
+  }
+  drawEverything();
+});
+
+function tick(timestamp: number) {
+  if (pause) return;
+  if (lastTimestamp === null) lastTimestamp = timestamp;
+  const deltaT = timestamp - lastTimestamp;
+  const deltaPx = (CHARACTER_SPEED * deltaT) / 1000;
+  lastTimestamp = timestamp;
+
+  const pacmanMoved = movePacman(deltaPx);
+  if (pacmanMoved && timestamp - lastPacmanFrameTimestamp > PACMAN_ANIMATION_FRAME_LENGTH) {
     lastPacmanFrameTimestamp = timestamp;
     pacmanFrame++;
     if (pacmanFrame > 2) pacmanFrame = 0;
   }
 
+  moveGhosts(deltaPx, timestamp);
   if (timestamp - lastGhostFrameTimestamp > GHOST_ANIMATION_FRAME_LENGTH) {
     lastGhostFrameTimestamp = timestamp;
     ghostFrame++;
     if (ghostFrame > 1) ghostFrame = 0;
   }
-  moveGhosts(deltaPx, timestamp);
 
   drawEverything();
   requestAnimationFrame(tick);

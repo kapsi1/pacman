@@ -1,4 +1,4 @@
-import { ctx, SCREEN_HEIGHT, SCREEN_WIDTH, TOP_MARGIN } from './canvas';
+import { ctx, TOP_MARGIN } from './canvas';
 import { CELL_SIZE, DEBUG_DOTS, DEBUG_GRID, DOT_SIZE, DRAW_DOTS, WALL_MARGIN, board } from './consts';
 import { gridToPx } from './utils';
 

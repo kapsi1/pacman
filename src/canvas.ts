@@ -1,6 +1,6 @@
 // const SCREEN_WIDTH = 224;
 // const SCREEN_WIDTH = 300; // debug left margin - also turn on in css
-// screen width is 224 px, but add left margin
+// Screen width is 224 px, plus left margin
 const SCREEN_WIDTH = 240;
 const SCREEN_HEIGHT = 288;
 const TOP_MARGIN = 24;
