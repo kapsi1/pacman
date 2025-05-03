@@ -73,9 +73,9 @@ function moveGhosts(deltaPx: number, timestamp: number) {
       if (teleported !== null) {
         ghost.pos = teleported.pos;
       } else {
-        const cellMiddle: PxPos = gridToPx(ghostGridPos);
-        const distanceToCellMiddle = pointDistance(ghost.pos, cellMiddle);
-        if (distanceToCellMiddle <= epsilon) {
+        const cellCenter: PxPos = gridToPx(ghostGridPos);
+        const distanceToCellCenter = pointDistance(ghost.pos, cellCenter);
+        if (distanceToCellCenter <= epsilon) {
           const { isIntersection, allowedDirections } = getAllowedDirections(ghost);
 
           if (isIntersection) {

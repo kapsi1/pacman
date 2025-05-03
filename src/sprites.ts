@@ -3,14 +3,14 @@ import { Direction, Ghost, GhostName, PxPos } from './types';
 import { DOT_SIZE, DEBUG_PACMAN } from './consts';
 
 // Prepare sprites: load into a new <canvas>, get imageData,
-// and turn black pixels into transparent pixels
+// and turn black pixels transparent
 const spritesEl: HTMLImageElement = document.images[0];
 const spriteCanvas = document.createElement('canvas');
 spriteCanvas.style.setProperty('image-rendering', 'pixelated');
 const spriteCtx = spriteCanvas.getContext('2d') as CanvasRenderingContext2D;
 spriteCtx.imageSmoothingEnabled = false;
 spriteCtx.drawImage(spritesEl, 0, 0);
-const imageData = spriteCtx.getImageData(0, 0, 224, 211);
+const imageData = spriteCtx.getImageData(0, 0, spritesEl.width, spritesEl.height);
 const data = imageData.data;
 for (let i = 0; i < data.length; i += 4) {
   const isBlack = data[i] + data[i + 1] + data[i + 2] === 0;
