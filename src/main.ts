@@ -23,10 +23,10 @@ import {
   randomInt,
   teleportCharacter,
   isThereCollision,
+  updateScore,
 } from './utils';
 
 const debugEl = document.querySelector('#debug') as HTMLDivElement;
-const scoreEl = document.querySelector('#score') as HTMLDivElement;
 
 const pacmanPos = gridToPx({ x: 15, y: 23 }); // default
 pacmanPos.x += 3;
@@ -177,7 +177,7 @@ function movePacman(deltaPx: number) {
     }
 
     if (scoreChanged) {
-      scoreEl.textContent = score.toString();
+      updateScore(score);
       const row = board[newCell.y];
       board[newCell.y] = row.substring(0, newCell.x) + ' ' + row.substring(newCell.x + 1);
     }

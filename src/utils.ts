@@ -105,3 +105,19 @@ export function isThereCollision(ghosts: Ghost[], pacmanPos: PxPos) {
   }
   return false;
 }
+
+const scoreEl = document.querySelector('#score') as HTMLDivElement;
+const highScoreEl = document.querySelector('#high-score') as HTMLDivElement;
+
+export function updateScore(score: string) {
+  scoreEl.textContent = score;
+  let highScore = localStorage.getItem('highScore') || '0';
+
+  if (parseInt(score) > parseInt(highScore)) {
+    highScore = score;
+    localStorage.setItem('highScore', highScore);
+    highScoreEl.textContent = highScore;
+  }
+}
+
+highScoreEl.textContent = localStorage.getItem('highScore') || '00';

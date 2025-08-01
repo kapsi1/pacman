@@ -49,7 +49,7 @@ img {
   z-index: 999;
 }
 
-#score {
+.score {
   color: #fff;
   text-align: right;
   background: #000;
@@ -58,6 +58,13 @@ img {
   font-size: 18px;
   position: absolute;
   top: 17px;
-  margin-right: 330px;
   width: 108px;
+}
+
+#score {
+  margin-right: 330px;
+}
+
+#high-score {
+  margin-left: 42px;
 }
