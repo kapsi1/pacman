@@ -19,9 +19,13 @@ import {
   CHARACTER_SPEED,
   DEBUG_GRID,
   GHOST_ANIMATION_FRAME_LENGTH,
+  GHOST_STARTS,
   NEW_LIFE_EVERY_POINTS,
   PACMAN_ANIMATION_FRAME_LENGTH,
   PACMAN_DEATH_FRAME_LENGTH,
+  PACMAN_START_DIR,
+  PACMAN_START_POS,
+  PAUSE_AFTER_DEATH,
   STARTING_LIVES,
   board,
 } from './consts';
@@ -66,21 +70,19 @@ let isCornering = false;
 const epsilon = 0.3;
 let lives = STARTING_LIVES;
 let lastLifeScore = 0;
+let ghosts: Ghost[] = JSON.parse(JSON.stringify(GHOST_STARTS));
 
-// export const ghosts: Ghost[] = [
-//   { name: GhostName.Blinky, pos: { x: 140, y: 116 }, direction: Direction.Left, lastChangedDirection: 0 },
-//   { name: GhostName.Inky, pos: { x: 112, y: 140 }, direction: Direction.Up, lastChangedDirection: 0 },
-//   { name: GhostName.Pinky, pos: { x: 128, y: 140 }, direction: Direction.Down, lastChangedDirection: 0 },
-//   { name: GhostName.Clyde, pos: { x: 144, y: 140 }, direction: Direction.Up, lastChangedDirection: 0 },
-// ];
-export const ghosts: Ghost[] = [
-  { name: GhostName.Blinky, pos: { x: 120, y: 116 }, direction: Direction.Left, lastChangedDirection: 0 },
-  { name: GhostName.Inky, pos: { x: 136, y: 116 }, direction: Direction.Right, lastChangedDirection: 0 },
-  { name: GhostName.Pinky, pos: { x: 120, y: 164 }, direction: Direction.Left, lastChangedDirection: 0 },
-  { name: GhostName.Clyde, pos: { x: 136, y: 164 }, direction: Direction.Right, lastChangedDirection: 0 },
-];
+function resetPositions() {
+  const px = gridToPx(PACMAN_START_POS);
+  pacmanPos.x = px.x + 3;
+  pacmanPos.y = px.y;
+  pacmanDir = PACMAN_START_DIR;
+  newDirection = null;
+  isCornering = false;
+  deathFrame = -10;
+  ghosts = JSON.parse(JSON.stringify(GHOST_STARTS));
+}
 
-// TODO different speed for Pacman and ghosts
 function moveGhosts(deltaPx: number, timestamp: number) {
   for (const ghost of ghosts) {
     if (ghost.lastChangedDirection === 0) ghost.lastChangedDirection = timestamp;
@@ -260,7 +262,16 @@ function tick(timestamp: number) {
     if (timestamp - lastDeathFrameTimestamp > PACMAN_DEATH_FRAME_LENGTH) {
       lastDeathFrameTimestamp = timestamp;
       deathFrame++;
-      if (deathFrame > 10) pause = true;
+      if (deathFrame > 10) {
+        lives--;
+        if (lives > 0) {
+          resetPositions();
+          pause = false;
+          lastTimestamp = null;
+        } else {
+          pause = true; // Game over logic can go here
+        }
+      }
     }
   } else {
     const pacmanMoved = movePacman(deltaPx);
