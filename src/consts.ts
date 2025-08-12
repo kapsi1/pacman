@@ -1,5 +1,5 @@
 export const STARTING_LIVES = 3;
-export const NEW_LIFE_EVERY_POINTS = 1000;
+export const NEW_LIFE_EVERY_POINTS = 10_000;
 
 export const WALL_MARGIN = 0;
 export const CELL_SIZE = 8;
