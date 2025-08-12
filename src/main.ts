@@ -1,16 +1,33 @@
+/*
+TODO
+lives (3 starting, new one every 10k points)
+restart after death
+fruit
+ghost AI
+ghosts start in cage
+ghosts have different speed than pacman
+ghosts have different speed in tunnels
+energizers
+sound
+text at start: PLAYER ONE READY!
+cutscenes
+*/
+
 import { Direction, Ghost, GhostName, GridPos, PxPos } from './types';
 import {
   CELL_SIZE,
   CHARACTER_SPEED,
   DEBUG_GRID,
   GHOST_ANIMATION_FRAME_LENGTH,
+  NEW_LIFE_EVERY_POINTS,
   PACMAN_ANIMATION_FRAME_LENGTH,
   PACMAN_DEATH_FRAME_LENGTH,
+  STARTING_LIVES,
   board,
 } from './consts';
 import { ctx, SCREEN_HEIGHT, SCREEN_WIDTH } from './canvas';
 import { drawBoard } from './board';
-import { drawPacman, drawGhosts, drawPacmanDeath } from './sprites';
+import { drawPacman, drawGhosts, drawPacmanDeath, drawLives } from './sprites';
 import {
   gridToPx,
   isHorizontalDir,
@@ -47,6 +64,8 @@ let isCornering = false;
 // Max distance from cell center in pixels,
 // for a point to be counted as being in the center
 const epsilon = 0.3;
+let lives = STARTING_LIVES;
+let lastLifeScore = 0;
 
 // export const ghosts: Ghost[] = [
 //   { name: GhostName.Blinky, pos: { x: 140, y: 116 }, direction: Direction.Left, lastChangedDirection: 0 },
@@ -177,9 +196,13 @@ function movePacman(deltaPx: number) {
     }
 
     if (scoreChanged) {
-      updateScore(score);
+      updateScore(score.toString());
       const row = board[newCell.y];
       board[newCell.y] = row.substring(0, newCell.x) + ' ' + row.substring(newCell.x + 1);
+      if (Math.floor(score / NEW_LIFE_EVERY_POINTS) > Math.floor(lastLifeScore / NEW_LIFE_EVERY_POINTS)) {
+        lives += 1;
+        lastLifeScore = score;
+      }
     }
   } else {
     if (isHorizontalDir(pacmanDir)) {
@@ -262,6 +285,7 @@ function tick(timestamp: number) {
 function drawEverything(isCollision: boolean) {
   ctx.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
   drawBoard();
+  drawLives(lives);
   if (isCollision && deathFrame >= 0) {
     drawPacmanDeath(pacmanPos, deathFrame);
   } else {
