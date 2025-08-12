@@ -1,6 +1,6 @@
 import { ctx } from './canvas';
 import { Direction, Ghost, GhostName, PxPos } from './types';
-import { DOT_SIZE, DEBUG_PACMAN } from './consts';
+import { DOT_SIZE, DEBUG_PACMAN, DEATH_ANIMATION_START_PAUSE_FRAMES, DEATH_ANIMATION_END_PAUSE_FRAMES } from './consts';
 
 // Prepare sprites: load into a new <canvas>, get imageData,
 // and turn black pixels transparent
@@ -64,11 +64,11 @@ export function drawGhosts(ghosts: Ghost[], frame: 0 | 1) {
   ghosts.forEach((ghost) => drawGhost(ghost.name, ghost.pos, ghost.direction, frame));
 }
 
-// Frame = 0..10
-export function drawPacmanDeath(pos: PxPos, frame: number) {
+export function drawDeathAnimation(pos: PxPos, frame: number) {
   const size = 15;
-  if (frame < 0) return;
-  let srcX = 48 + (size + 1) * frame;
+  if (frame < DEATH_ANIMATION_START_PAUSE_FRAMES) return;
+  if (frame > DEATH_ANIMATION_START_PAUSE_FRAMES + DEATH_ANIMATION_END_PAUSE_FRAMES) return;
+  let srcX = 48 + (size + 1) * (frame - DEATH_ANIMATION_START_PAUSE_FRAMES);
   let srcY = 1;
   const destX = Math.round(pos.x - size / 2);
   const destY = Math.round(pos.y - size / 2);
