@@ -1,0 +1,10 @@
+fruit
+ghost AI
+ghosts start in cage
+ghosts have different speed than pacman
+ghosts have different speed in tunnels
+energizers
+sound
+mute & fullscreen buttons
+next level
+cutscenes

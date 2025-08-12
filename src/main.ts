@@ -1,18 +1,3 @@
-/*
-TODO
-fruit
-ghost AI
-ghosts start in cage
-ghosts have different speed than pacman
-ghosts have different speed in tunnels
-energizers
-sound
-mute button
-fullscreen button
-next level
-cutscenes
-*/
-
 import { Direction, Ghost, GridPos, PxPos } from './types';
 import {
   CELL_SIZE,
@@ -249,14 +234,6 @@ document.addEventListener('keydown', (event) => {
     return;
   }
   switch (event.key) {
-    case 'f':
-      // Toggle fullscreen
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen();
-      } else {
-        document.exitFullscreen();
-      }
-      break;
     case '`':
     case ' ':
       isPaused = !isPaused;
