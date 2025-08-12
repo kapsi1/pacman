@@ -77,7 +77,7 @@ export const board = boardS.split('\n');
 board.shift();
 
 export const PACMAN_START_POS = { x: 15, y: 23 };
-export const PACMAN_START_DIR = Direction.Right;
+export const PACMAN_START_DIR = Direction.Left;
 export const GHOST_STARTS = [
   { name: GhostName.Blinky, pos: { x: 120, y: 116 }, direction: Direction.Left, lastChangedDirection: 0 },
   { name: GhostName.Inky, pos: { x: 136, y: 116 }, direction: Direction.Right, lastChangedDirection: 0 },

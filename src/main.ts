@@ -7,7 +7,9 @@ ghosts have different speed than pacman
 ghosts have different speed in tunnels
 energizers
 sound
-text at start: PLAYER ONE READY!
+mute button
+fullscreen button
+next level
 cutscenes
 */
 
@@ -104,7 +106,7 @@ function resetGameState() {
   lives = INITIAL_LIVES;
   lastLifeScore = 0;
   resetLife();
-  updateScore('0');
+  updateScore('00');
   hideGameOver();
 }
 
@@ -247,6 +249,14 @@ document.addEventListener('keydown', (event) => {
     return;
   }
   switch (event.key) {
+    case 'f':
+      // Toggle fullscreen
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+      break;
     case '`':
     case ' ':
       isPaused = !isPaused;
@@ -339,4 +349,5 @@ function drawEverything(isCollision: boolean) {
   ctx.fillRect(0, 0, 16, SCREEN_HEIGHT);
 }
 
+// Start game
 resetGameState();

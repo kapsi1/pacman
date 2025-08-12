@@ -49,41 +49,42 @@ img {
   z-index: 999;
 }
 
+#ready,
+#game-over,
+.score {
+  font-family: 'Press Start';
+  font-size: 3vh;
+  position: absolute;
+}
+
 .score {
   color: #fff;
   text-align: right;
-  background: #000;
-  padding: 5px;
-  font-family: 'Press Start';
-  font-size: 18px;
-  position: absolute;
-  top: 17px;
-  width: 108px;
+  margin-top: 3.5vh;
+  width: 22vh;
 }
 
 #score {
-  margin-right: 330px;
+  margin-right: 61vh;
 }
 
 #high-score {
-  margin-left: 42px;
+  margin-left: 0.7vh;
 }
 
 #ready,
 #game-over {
-  font-family: 'Press Start';
-  font-size: 18px;
-  position: absolute;
-  top: 385px;
+  top: 50%;
+  left: 50%;
+  margin-top: 5.7vh;
 }
 
 #ready {
-  color: #ffff00;
-  left: 448px;
+  color: #ff0;
+  margin-left: -5.7vh;
 }
 
 #game-over {
   color: #ff0000;
-  left: 409px;
-  display: none;
+  margin-left: -10.8vh;
 }
