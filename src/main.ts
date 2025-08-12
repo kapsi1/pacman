@@ -1,6 +1,6 @@
 /*
 TODO
-lives (3 starting, new one every 10k points)
+game over when lives run out
 restart after death
 fruit
 ghost AI
