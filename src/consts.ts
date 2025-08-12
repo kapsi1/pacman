@@ -1,6 +1,7 @@
 import { Direction, GhostName } from './types';
 
-export const STARTING_LIVES = 3;
+export const INITIAL_LIVES = 3;
+// export const INITIAL_LIVES = 1;
 export const NEW_LIFE_EVERY_POINTS = 10_000;
 
 export const WALL_MARGIN = 0;
@@ -12,7 +13,14 @@ export const DIRECTION_CHANGE_BUFFER_TIME = 500;
 export const PACMAN_ANIMATION_FRAME_LENGTH = 70;
 export const GHOST_ANIMATION_FRAME_LENGTH = 300;
 export const PACMAN_DEATH_FRAME_LENGTH = 150;
-export const PAUSE_AFTER_DEATH = 3_000;
+export const STARTING_PAUSE = 2_000;
+
+// Wait 10 frames, play death animation, wait another 10 frames
+export const DEATH_ANIMATION_FRAMES = 10;
+export const DEATH_ANIMATION_START_PAUSE_FRAMES = 10;
+export const DEATH_ANIMATION_END_PAUSE_FRAMES = 10;
+export const DEATH_ANIMATION_TOTAL_FRAMES =
+  DEATH_ANIMATION_FRAMES + DEATH_ANIMATION_START_PAUSE_FRAMES + DEATH_ANIMATION_END_PAUSE_FRAMES;
 
 // Pixels / second
 // export const CHARACTER_SPEED = 1;

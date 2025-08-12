@@ -73,7 +73,7 @@ export function getAllowedDirections(ghost: Ghost) {
 }
 
 export function randomInt(min: number, max: number) {
-  return Math.floor(Math.random() * max) + min;
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 export function teleportCharacter(direction: Direction, cell: GridPos) {
@@ -121,3 +121,19 @@ export function updateScore(score: string) {
 }
 
 highScoreEl.textContent = localStorage.getItem('highScore') || '00';
+
+const readyTextEl = document.querySelector('#ready') as HTMLDivElement;
+export function showReadyText() {
+  readyTextEl.style.display = 'block';
+}
+export function hideReadyText() {
+  readyTextEl.style.display = 'none';
+}
+
+const gameOverTextEl = document.querySelector('#game-over') as HTMLDivElement;
+export function showGameOver() {
+  gameOverTextEl.style.display = 'block';
+}
+export function hideGameOver() {
+  gameOverTextEl.style.display = 'none';
+}

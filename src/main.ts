@@ -1,7 +1,5 @@
 /*
 TODO
-game over when lives run out
-restart after death
 fruit
 ghost AI
 ghosts start in cage
@@ -13,7 +11,7 @@ text at start: PLAYER ONE READY!
 cutscenes
 */
 
-import { Direction, Ghost, GhostName, GridPos, PxPos } from './types';
+import { Direction, Ghost, GridPos, PxPos } from './types';
 import {
   CELL_SIZE,
   CHARACTER_SPEED,
@@ -25,13 +23,16 @@ import {
   PACMAN_DEATH_FRAME_LENGTH,
   PACMAN_START_DIR,
   PACMAN_START_POS,
-  PAUSE_AFTER_DEATH,
-  STARTING_LIVES,
+  STARTING_PAUSE,
+  INITIAL_LIVES,
   board,
+  DEATH_ANIMATION_TOTAL_FRAMES,
+  DEATH_ANIMATION_START_PAUSE_FRAMES,
 } from './consts';
 import { ctx, SCREEN_HEIGHT, SCREEN_WIDTH } from './canvas';
 import { drawBoard } from './board';
-import { drawPacman, drawGhosts, drawPacmanDeath, drawLives } from './sprites';
+import { drawPacman, drawGhosts, drawDeathAnimation, drawLives } from './sprites';
+
 import {
   gridToPx,
   isHorizontalDir,
@@ -45,42 +46,66 @@ import {
   teleportCharacter,
   isThereCollision,
   updateScore,
+  hideReadyText,
+  showGameOver,
+  hideGameOver,
+  showReadyText,
 } from './utils';
 
 const debugEl = document.querySelector('#debug') as HTMLDivElement;
-
-const pacmanPos = gridToPx({ x: 15, y: 23 }); // default
-pacmanPos.x += 3;
-let pacmanDir = Direction.Right;
-let newDirection: Direction | null = null;
-let pause = false;
-let lastTimestamp: number | null = null;
-let pacmanFrame: 0 | 1 | 2 = 0;
-let ghostFrame: 0 | 1 = 0;
-// Death animation has 10 frames [0..10],
-// to this we add 10 fake frames to add a delay before death animation
-let deathFrame = -10;
-let lastPacmanFrameTimestamp = 0;
-let lastGhostFrameTimestamp = 0;
-let lastDeathFrameTimestamp = 0;
-let score = 0;
-let isCornering = false;
 // Max distance from cell center in pixels,
 // for a point to be counted as being in the center
 const epsilon = 0.3;
-let lives = STARTING_LIVES;
-let lastLifeScore = 0;
-let ghosts: Ghost[] = JSON.parse(JSON.stringify(GHOST_STARTS));
+let pacmanPos: PxPos,
+  pacmanDir: Direction,
+  newDirection: Direction | null,
+  isPaused: boolean,
+  isGameOver: boolean,
+  lastTimestamp: number | null,
+  pacmanFrame: 0 | 1 | 2,
+  ghostFrame: 0 | 1,
+  deathAnimationFrame: number,
+  lastPacmanFrameTimestamp: number,
+  lastGhostFrameTimestamp: number,
+  lastDeathFrameTimestamp: number,
+  score: number,
+  isCornering: boolean,
+  lives: number,
+  lastLifeScore: number,
+  ghosts: Ghost[];
 
-function resetPositions() {
-  const px = gridToPx(PACMAN_START_POS);
-  pacmanPos.x = px.x + 3;
-  pacmanPos.y = px.y;
+function resetLife() {
+  isPaused = true;
+  pacmanFrame = 0;
+  ghostFrame = 0;
+  deathAnimationFrame = 0;
+  lastPacmanFrameTimestamp = 0;
+  lastGhostFrameTimestamp = 0;
+  lastDeathFrameTimestamp = 0;
+  lastTimestamp = null;
+  pacmanPos = gridToPx(PACMAN_START_POS);
+  pacmanPos.x = pacmanPos.x + 3;
   pacmanDir = PACMAN_START_DIR;
   newDirection = null;
   isCornering = false;
-  deathFrame = -10;
   ghosts = JSON.parse(JSON.stringify(GHOST_STARTS));
+  showReadyText();
+  drawEverything(false);
+  setTimeout(() => {
+    hideReadyText();
+    isPaused = false;
+    requestAnimationFrame(tick);
+  }, STARTING_PAUSE);
+}
+
+function resetGameState() {
+  isGameOver = false;
+  score = 0;
+  lives = INITIAL_LIVES;
+  lastLifeScore = 0;
+  resetLife();
+  updateScore('0');
+  hideGameOver();
 }
 
 function moveGhosts(deltaPx: number, timestamp: number) {
@@ -100,7 +125,7 @@ function moveGhosts(deltaPx: number, timestamp: number) {
           const { isIntersection, allowedDirections } = getAllowedDirections(ghost);
 
           if (isIntersection) {
-            const randomDir = allowedDirections[randomInt(0, allowedDirections.length)];
+            const randomDir = allowedDirections[randomInt(0, allowedDirections.length - 1)];
             ghost.direction = randomDir;
             ghost.lastChangedDirection = timestamp;
             if (isHorizontalDir(ghost.direction)) {
@@ -217,11 +242,15 @@ function movePacman(deltaPx: number) {
 }
 
 document.addEventListener('keydown', (event) => {
+  if (isGameOver) {
+    if (event.key === ' ') resetGameState();
+    return;
+  }
   switch (event.key) {
     case '`':
     case ' ':
-      pause = !pause;
-      if (!pause) {
+      isPaused = !isPaused;
+      if (!isPaused) {
         lastTimestamp = null;
         requestAnimationFrame(tick);
       }
@@ -251,7 +280,7 @@ document.addEventListener('keydown', (event) => {
 });
 
 function tick(timestamp: number) {
-  if (pause) return;
+  if (isPaused) return;
   if (lastTimestamp === null) lastTimestamp = timestamp;
   const deltaT = timestamp - lastTimestamp;
   const deltaPx = (CHARACTER_SPEED * deltaT) / 1000;
@@ -261,15 +290,15 @@ function tick(timestamp: number) {
   if (isCollision) {
     if (timestamp - lastDeathFrameTimestamp > PACMAN_DEATH_FRAME_LENGTH) {
       lastDeathFrameTimestamp = timestamp;
-      deathFrame++;
-      if (deathFrame > 10) {
+      deathAnimationFrame++;
+      if (deathAnimationFrame > DEATH_ANIMATION_TOTAL_FRAMES) {
         lives--;
         if (lives > 0) {
-          resetPositions();
-          pause = false;
-          lastTimestamp = null;
+          resetLife();
         } else {
-          pause = true; // Game over logic can go here
+          isPaused = true;
+          isGameOver = true;
+          showGameOver();
         }
       }
     }
@@ -297,8 +326,10 @@ function drawEverything(isCollision: boolean) {
   ctx.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
   drawBoard();
   drawLives(lives);
-  if (isCollision && deathFrame >= 0) {
-    drawPacmanDeath(pacmanPos, deathFrame);
+  // After a collision, show ghosts for DEATH_ANIMATION_START_PAUSE_FRAMES,
+  // then hide them for the rest of death animation
+  if (isCollision && deathAnimationFrame >= DEATH_ANIMATION_START_PAUSE_FRAMES) {
+    drawDeathAnimation(pacmanPos, deathAnimationFrame);
   } else {
     drawPacman(pacmanPos, pacmanDir, pacmanFrame);
     drawGhosts(ghosts, ghostFrame);
@@ -308,5 +339,4 @@ function drawEverything(isCollision: boolean) {
   ctx.fillRect(0, 0, 16, SCREEN_HEIGHT);
 }
 
-drawEverything(false);
-requestAnimationFrame(tick);
+resetGameState();
