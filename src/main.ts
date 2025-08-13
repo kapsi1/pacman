@@ -18,7 +18,6 @@ import {
   GHOST_PEN_EXIT_Y,
   GHOST_PEN_BOTTOM_WALL_Y,
   GHOST_PEN_TOP_WALL_Y,
-  PACMAN_SPEED,
 } from './consts';
 import { ctx, SCREEN_HEIGHT, SCREEN_WIDTH } from './canvas';
 import { drawBoard } from './board';
@@ -41,6 +40,9 @@ import {
   showGameOver,
   hideGameOver,
   showReadyText,
+  getPacmanSpeed,
+  getGhostSpeed,
+  isInTunnel,
 } from './utils';
 
 const debugEl = document.querySelector('#debug') as HTMLDivElement;
@@ -66,7 +68,8 @@ let pacmanPos: PxPos,
   ghosts: Ghost[],
   level: number,
   dotsEaten: number,
-  isCollision: boolean;
+  isCollision: boolean,
+  pacmanSpeed: number;
 
 function resetLife() {
   isPaused = true;
@@ -115,6 +118,7 @@ function resetGameState() {
   lives = INITIAL_LIVES;
   lastLifeScore = 0;
   level = 1;
+  pacmanSpeed = getPacmanSpeed(level);
   resetLife();
   ghosts.forEach((ghost) => {
     switch (ghost.name) {
@@ -162,7 +166,7 @@ function moveGhosts(deltaT: number, timestamp: number) {
           ghost.inPen = false;
           ghost.pos.y = GHOST_PEN_EXIT_Y;
           ghost.direction = Direction.Left;
-          ghost.speed = PACMAN_SPEED;
+          ghost.speed = getGhostSpeed(level);
         }
       } else {
         // If it can't leave, bounce between walls
@@ -196,6 +200,12 @@ function moveGhosts(deltaT: number, timestamp: number) {
       }
     }
     ghost.pos = offsetPos(ghost.pos, deltaPx, ghost.direction);
+
+    // Change speed in tunnel
+    if (!ghost.inPen && ghost.pos.y === 140) {
+      if (ghost.pos.x < 60 || ghost.pos.x > 196) ghost.speed = getGhostSpeed(level, false, true);
+      else ghost.speed = getGhostSpeed(level, false, false);
+    }
   }
 }
 
@@ -360,7 +370,7 @@ function tick(timestamp: number) {
       }
     }
   } else {
-    const deltaPx = (PACMAN_SPEED * deltaT) / 1000;
+    const deltaPx = (pacmanSpeed * deltaT) / 1000;
     const pacmanMoved = movePacman(deltaPx);
     if (pacmanMoved && timestamp - lastPacmanFrameTimestamp > PACMAN_ANIMATION_FRAME_LENGTH) {
       lastPacmanFrameTimestamp = timestamp;

@@ -1,5 +1,5 @@
 import { TOP_MARGIN } from './canvas';
-import { WALL_MARGIN, CELL_SIZE, board } from './consts';
+import { WALL_MARGIN, CELL_SIZE, board, FULL_SPEED } from './consts';
 import { Direction, Ghost, GridPos, PxPos } from './types';
 
 export const isHorizontalDir = (direction: Direction) => direction === Direction.Left || direction === Direction.Right;
@@ -81,13 +81,13 @@ export function teleportCharacter(direction: Direction, cell: GridPos) {
   let newPos: PxPos = { x: 0, y: 0 };
   let newCell: GridPos = { x: 0, y: 0 };
 
-  // Teleport from left to right pipe
+  // Teleport from left to right tunnel
   if (direction === Direction.Left && cell.x === 0 && cell.y === 14) {
     newPos = { x: 252, y: 140 };
     newCell = { x: 31, y: 14 };
     return { pos: newPos, cell: newCell };
   }
-  // Teleport from right to left pipe
+  // Teleport from right to left tunnel
   if (direction === Direction.Right && cell.x === 31 && cell.y === 14) {
     newPos = { x: 0, y: 140 };
     newCell = { x: 0, y: 14 };
@@ -127,6 +127,7 @@ const readyTextEl = document.querySelector('#ready') as HTMLDivElement;
 export function showReadyText() {
   readyTextEl.style.display = 'block';
 }
+
 export function hideReadyText() {
   readyTextEl.style.display = 'none';
 }
@@ -135,6 +136,38 @@ const gameOverTextEl = document.querySelector('#game-over') as HTMLDivElement;
 export function showGameOver() {
   gameOverTextEl.style.display = 'block';
 }
+
 export function hideGameOver() {
   gameOverTextEl.style.display = 'none';
+}
+
+export function getPacmanSpeed(level: number, isFright = false): number {
+  if (level === 1) {
+    return isFright ? FULL_SPEED * 0.9 : FULL_SPEED * 0.8;
+  } else if (level >= 2 && level <= 4) {
+    return isFright ? FULL_SPEED * 0.95 : FULL_SPEED * 0.9;
+  } else if (level >= 5 && level <= 20) {
+    return FULL_SPEED;
+  } else {
+    return FULL_SPEED * 0.9;
+  }
+}
+
+export function getGhostSpeed(level: number, isFright = false, isTunnel = false): number {
+  if (level === 1) {
+    if (isFright) return FULL_SPEED * 0.5;
+    if (isTunnel) return FULL_SPEED * 0.4;
+    return FULL_SPEED * 0.75;
+  } else if (level >= 2 && level <= 4) {
+    if (isFright) return FULL_SPEED * 0.55;
+    if (isTunnel) return FULL_SPEED * 0.45;
+    return FULL_SPEED * 0.85;
+  } else if (level >= 5 && level <= 20) {
+    if (isFright) return FULL_SPEED * 0.6;
+    if (isTunnel) return FULL_SPEED * 0.5;
+    return FULL_SPEED * 0.95;
+  } else {
+    if (isTunnel) return FULL_SPEED * 0.5;
+    return FULL_SPEED * 0.95;
+  }
 }

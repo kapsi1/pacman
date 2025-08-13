@@ -1,4 +1,5 @@
-import { Direction, Ghost, GhostName } from './types';
+import { Direction, GhostName } from './types';
+import { getGhostSpeed } from './utils';
 
 export const INITIAL_LIVES = 3;
 // export const INITIAL_LIVES = 1;
@@ -23,8 +24,7 @@ export const DEATH_ANIMATION_TOTAL_FRAMES =
   DEATH_ANIMATION_FRAMES + DEATH_ANIMATION_START_PAUSE_FRAMES + DEATH_ANIMATION_END_PAUSE_FRAMES;
 
 // Pixels / second
-export const PACMAN_SPEED = 60;
-const GHOST_PEN_SPEED = 30;
+export const FULL_SPEED = 75.75757625;
 
 export const DEBUG_DOTS = false;
 // export const DEBUG_DOTS = true;
@@ -82,12 +82,13 @@ export const GHOST_PEN_CENTER_Y = 140;
 export const GHOST_PEN_EXIT_Y = 116;
 export const GHOST_PEN_TOP_WALL_Y = 135;
 export const GHOST_PEN_BOTTOM_WALL_Y = 145;
+const GHOST_PEN_SPEED = 30;
 export const GHOST_STARTS = [
   {
     name: GhostName.Blinky,
     pos: { x: GHOST_PEN_CENTER_X, y: GHOST_PEN_EXIT_Y },
     direction: Direction.Left,
-    speed: PACMAN_SPEED,
+    speed: getGhostSpeed(1),
   },
   { name: GhostName.Inky, pos: { x: 112, y: GHOST_PEN_CENTER_Y }, direction: Direction.Up, speed: GHOST_PEN_SPEED },
   {
