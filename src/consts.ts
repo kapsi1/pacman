@@ -1,4 +1,4 @@
-import { Direction, GhostName } from './types';
+import { Direction, Ghost, GhostName } from './types';
 
 export const INITIAL_LIVES = 3;
 // export const INITIAL_LIVES = 1;
@@ -25,7 +25,9 @@ export const DEATH_ANIMATION_TOTAL_FRAMES =
 // Pixels / second
 // export const CHARACTER_SPEED = 1;
 // export const CHARACTER_SPEED = 5;
+// export const CHARACTER_SPEED = 10;
 // export const CHARACTER_SPEED = 20;
+// export const CHARACTER_SPEED = 30;
 export const CHARACTER_SPEED = 60; // default
 
 export const DEBUG_DOTS = false;
@@ -78,9 +80,15 @@ board.shift();
 
 export const PACMAN_START_POS = { x: 15, y: 23 };
 export const PACMAN_START_DIR = Direction.Left;
+
+export const GHOST_PEN_CENTER_X = 128;
+export const GHOST_PEN_CENTER_Y = 140;
+export const GHOST_PEN_EXIT_Y = 116;
+export const GHOST_PEN_TOP_WALL_Y = 135;
+export const GHOST_PEN_BOTTOM_WALL_Y = 145;
 export const GHOST_STARTS = [
-  { name: GhostName.Blinky, pos: { x: 120, y: 116 }, direction: Direction.Left, lastChangedDirection: 0 },
-  { name: GhostName.Inky, pos: { x: 136, y: 116 }, direction: Direction.Right, lastChangedDirection: 0 },
-  { name: GhostName.Pinky, pos: { x: 120, y: 164 }, direction: Direction.Left, lastChangedDirection: 0 },
-  { name: GhostName.Clyde, pos: { x: 136, y: 164 }, direction: Direction.Right, lastChangedDirection: 0 },
+  // { name: GhostName.Blinky, pos: { x: GHOST_PEN_CENTER_X, y: GHOST_PEN_EXIT_Y }, direction: Direction.Left },
+  { name: GhostName.Inky, pos: { x: 112, y: GHOST_PEN_CENTER_Y }, direction: Direction.Up },
+  { name: GhostName.Pinky, pos: { x: GHOST_PEN_CENTER_X, y: GHOST_PEN_CENTER_Y }, direction: Direction.Up },
+  { name: GhostName.Clyde, pos: { x: 144, y: GHOST_PEN_CENTER_Y }, direction: Direction.Up },
 ];

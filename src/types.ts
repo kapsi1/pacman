@@ -27,4 +27,7 @@ export type Ghost = {
   pos: PxPos;
   direction: Direction;
   lastChangedDirection: number;
+  inPen: boolean;
+  dotLimit?: number;
+  canLeave: boolean;
 };

@@ -1,4 +1,4 @@
-import { Direction, Ghost, GridPos, PxPos } from './types';
+import { Direction, Ghost, GhostName, GridPos, PxPos } from './types';
 import {
   CELL_SIZE,
   CHARACTER_SPEED,
@@ -15,6 +15,10 @@ import {
   board,
   DEATH_ANIMATION_TOTAL_FRAMES,
   DEATH_ANIMATION_START_PAUSE_FRAMES,
+  GHOST_PEN_CENTER_X,
+  GHOST_PEN_EXIT_Y,
+  GHOST_PEN_BOTTOM_WALL_Y,
+  GHOST_PEN_TOP_WALL_Y,
 } from './consts';
 import { ctx, SCREEN_HEIGHT, SCREEN_WIDTH } from './canvas';
 import { drawBoard } from './board';
@@ -59,7 +63,9 @@ let pacmanPos: PxPos,
   isCornering: boolean,
   lives: number,
   lastLifeScore: number,
-  ghosts: Ghost[];
+  ghosts: Ghost[],
+  level: number,
+  dotsEaten: number;
 
 function resetLife() {
   isPaused = true;
@@ -75,7 +81,23 @@ function resetLife() {
   pacmanDir = PACMAN_START_DIR;
   newDirection = null;
   isCornering = false;
+  dotsEaten = 0;
   ghosts = JSON.parse(JSON.stringify(GHOST_STARTS));
+  ghosts.forEach((ghost) => {
+    ghost.lastChangedDirection = 0;
+    ghost.inPen = ghost.name !== GhostName.Blinky;
+    switch (ghost.name) {
+      case GhostName.Pinky:
+        ghost.dotLimit = 7;
+        break;
+      case GhostName.Inky:
+        ghost.dotLimit = 17;
+        break;
+      case GhostName.Clyde:
+        ghost.dotLimit = 32;
+        break;
+    }
+  });
   showReadyText();
   drawEverything(false);
   setTimeout(() => {
@@ -90,7 +112,23 @@ function resetGameState() {
   score = 0;
   lives = INITIAL_LIVES;
   lastLifeScore = 0;
+  level = 1;
   resetLife();
+  ghosts.forEach((ghost) => {
+    switch (ghost.name) {
+      case GhostName.Pinky:
+        delete ghost.dotLimit;
+        ghost.canLeave = true;
+        break;
+      case GhostName.Inky:
+        if (level === 1) ghost.dotLimit = 30;
+        break;
+      case GhostName.Clyde:
+        if (level === 1) ghost.dotLimit = 90;
+        else if (level === 2) ghost.dotLimit = 50;
+        break;
+    }
+  });
   updateScore('00');
   hideGameOver();
 }
@@ -100,17 +138,46 @@ function moveGhosts(deltaPx: number, timestamp: number) {
     if (ghost.lastChangedDirection === 0) ghost.lastChangedDirection = timestamp;
     const minDeltaT = (1 / CHARACTER_SPEED) * 1000 * 4;
 
-    if (timestamp - ghost.lastChangedDirection > minDeltaT) {
+    //TODO ghosts in pen are slower
+    if (ghost.inPen) {
+      if (ghost.dotLimit && dotsEaten >= ghost.dotLimit) {
+        ghost.canLeave = true;
+        if (ghost.pos.x > GHOST_PEN_CENTER_X) ghost.direction = Direction.Left;
+        else if (ghost.pos.x < GHOST_PEN_CENTER_X) ghost.direction = Direction.Right;
+        else ghost.direction = Direction.Up;
+        delete ghost.dotLimit;
+      }
+      if (ghost.canLeave) {
+        // When ghost inside pen reaches middle point, go up
+        if (Math.abs(ghost.pos.x - GHOST_PEN_CENTER_X) <= 1) {
+          ghost.direction = Direction.Up;
+          ghost.pos.x = GHOST_PEN_CENTER_X;
+        }
+        // When it reaches the cell above exit, it goes left and is no longer in the pen
+        if (Math.abs(ghost.pos.y - GHOST_PEN_EXIT_Y) <= 1) {
+          ghost.inPen = false;
+          ghost.pos.y = GHOST_PEN_EXIT_Y;
+          ghost.direction = Direction.Left;
+        }
+      } else {
+        // If it can't leave, bounce between walls
+        if (ghost.pos.y < GHOST_PEN_TOP_WALL_Y) {
+          ghost.direction = Direction.Down;
+        } else if (ghost.pos.y > GHOST_PEN_BOTTOM_WALL_Y) {
+          ghost.direction = Direction.Up;
+        }
+      }
+    } else if (timestamp - ghost.lastChangedDirection > minDeltaT) {
       const ghostGridPos: GridPos = pxToGrid(ghost.pos);
-      const teleported = teleportCharacter(ghost.direction, ghostGridPos);
-      if (teleported !== null) {
-        ghost.pos = teleported.pos;
+      const teleportedPos = teleportCharacter(ghost.direction, ghostGridPos);
+      if (teleportedPos !== null) {
+        ghost.pos = teleportedPos.pos;
       } else {
         const cellCenter: PxPos = gridToPx(ghostGridPos);
         const distanceToCellCenter = pointDistance(ghost.pos, cellCenter);
+
         if (distanceToCellCenter <= epsilon) {
           const { isIntersection, allowedDirections } = getAllowedDirections(ghost);
-
           if (isIntersection) {
             const randomDir = allowedDirections[randomInt(0, allowedDirections.length - 1)];
             ghost.direction = randomDir;
@@ -204,6 +271,7 @@ function movePacman(deltaPx: number) {
     if (board[newCell.y] && board[newCell.y][newCell.x] === '.') {
       score += 10;
       scoreChanged = true;
+      dotsEaten++;
     } else if (board[newCell.y] && board[newCell.y][newCell.x] === 'o') {
       score += 50;
       scoreChanged = true;

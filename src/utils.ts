@@ -58,6 +58,7 @@ export function getAllowedDirections(ghost: Ghost) {
   const gDir = ghost.direction;
 
   for (let dir of directions) {
+    // Don't allow reversing direction
     if (dir === Direction.Left && gDir === Direction.Right) continue;
     if (dir === Direction.Right && gDir === Direction.Left) continue;
     if (dir === Direction.Up && gDir === Direction.Down) continue;
