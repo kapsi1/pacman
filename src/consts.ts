@@ -23,12 +23,8 @@ export const DEATH_ANIMATION_TOTAL_FRAMES =
   DEATH_ANIMATION_FRAMES + DEATH_ANIMATION_START_PAUSE_FRAMES + DEATH_ANIMATION_END_PAUSE_FRAMES;
 
 // Pixels / second
-// export const CHARACTER_SPEED = 1;
-// export const CHARACTER_SPEED = 5;
-// export const CHARACTER_SPEED = 10;
-// export const CHARACTER_SPEED = 20;
-// export const CHARACTER_SPEED = 30;
-export const CHARACTER_SPEED = 60; // default
+export const PACMAN_SPEED = 60;
+const GHOST_PEN_SPEED = 30;
 
 export const DEBUG_DOTS = false;
 // export const DEBUG_DOTS = true;
@@ -87,8 +83,18 @@ export const GHOST_PEN_EXIT_Y = 116;
 export const GHOST_PEN_TOP_WALL_Y = 135;
 export const GHOST_PEN_BOTTOM_WALL_Y = 145;
 export const GHOST_STARTS = [
-  // { name: GhostName.Blinky, pos: { x: GHOST_PEN_CENTER_X, y: GHOST_PEN_EXIT_Y }, direction: Direction.Left },
-  { name: GhostName.Inky, pos: { x: 112, y: GHOST_PEN_CENTER_Y }, direction: Direction.Up },
-  { name: GhostName.Pinky, pos: { x: GHOST_PEN_CENTER_X, y: GHOST_PEN_CENTER_Y }, direction: Direction.Up },
-  { name: GhostName.Clyde, pos: { x: 144, y: GHOST_PEN_CENTER_Y }, direction: Direction.Up },
+  {
+    name: GhostName.Blinky,
+    pos: { x: GHOST_PEN_CENTER_X, y: GHOST_PEN_EXIT_Y },
+    direction: Direction.Left,
+    speed: PACMAN_SPEED,
+  },
+  { name: GhostName.Inky, pos: { x: 112, y: GHOST_PEN_CENTER_Y }, direction: Direction.Up, speed: GHOST_PEN_SPEED },
+  {
+    name: GhostName.Pinky,
+    pos: { x: GHOST_PEN_CENTER_X, y: GHOST_PEN_CENTER_Y },
+    direction: Direction.Up,
+    speed: GHOST_PEN_SPEED,
+  },
+  { name: GhostName.Clyde, pos: { x: 144, y: GHOST_PEN_CENTER_Y }, direction: Direction.Up, speed: GHOST_PEN_SPEED },
 ];

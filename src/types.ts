@@ -30,4 +30,5 @@ export type Ghost = {
   inPen: boolean;
   dotLimit?: number;
   canLeave: boolean;
+  speed: number;
 };

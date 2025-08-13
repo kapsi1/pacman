@@ -1,7 +1,6 @@
 import { Direction, Ghost, GhostName, GridPos, PxPos } from './types';
 import {
   CELL_SIZE,
-  CHARACTER_SPEED,
   DEBUG_GRID,
   GHOST_ANIMATION_FRAME_LENGTH,
   GHOST_STARTS,
@@ -19,6 +18,7 @@ import {
   GHOST_PEN_EXIT_Y,
   GHOST_PEN_BOTTOM_WALL_Y,
   GHOST_PEN_TOP_WALL_Y,
+  PACMAN_SPEED,
 } from './consts';
 import { ctx, SCREEN_HEIGHT, SCREEN_WIDTH } from './canvas';
 import { drawBoard } from './board';
@@ -133,12 +133,13 @@ function resetGameState() {
   hideGameOver();
 }
 
-function moveGhosts(deltaPx: number, timestamp: number) {
+function moveGhosts(deltaT: number, timestamp: number) {
   for (const ghost of ghosts) {
     if (ghost.lastChangedDirection === 0) ghost.lastChangedDirection = timestamp;
-    const minDeltaT = (1 / CHARACTER_SPEED) * 1000 * 4;
+    const deltaPx = (ghost.speed * deltaT) / 1000;
+    //Prevent changing directions multiple times on intersections
+    const minDeltaT = (1 / ghost.speed) * 1000 * 4;
 
-    //TODO ghosts in pen are slower
     if (ghost.inPen) {
       if (ghost.dotLimit && dotsEaten >= ghost.dotLimit) {
         ghost.canLeave = true;
@@ -149,15 +150,16 @@ function moveGhosts(deltaPx: number, timestamp: number) {
       }
       if (ghost.canLeave) {
         // When ghost inside pen reaches middle point, go up
-        if (Math.abs(ghost.pos.x - GHOST_PEN_CENTER_X) <= 1) {
+        if (Math.abs(ghost.pos.x - GHOST_PEN_CENTER_X) <= epsilon) {
           ghost.direction = Direction.Up;
           ghost.pos.x = GHOST_PEN_CENTER_X;
         }
         // When it reaches the cell above exit, it goes left and is no longer in the pen
-        if (Math.abs(ghost.pos.y - GHOST_PEN_EXIT_Y) <= 1) {
+        if (Math.abs(ghost.pos.y - GHOST_PEN_EXIT_Y) <= epsilon) {
           ghost.inPen = false;
           ghost.pos.y = GHOST_PEN_EXIT_Y;
           ghost.direction = Direction.Left;
+          ghost.speed = PACMAN_SPEED;
         }
       } else {
         // If it can't leave, bounce between walls
@@ -338,7 +340,6 @@ function tick(timestamp: number) {
   if (isPaused) return;
   if (lastTimestamp === null) lastTimestamp = timestamp;
   const deltaT = timestamp - lastTimestamp;
-  const deltaPx = (CHARACTER_SPEED * deltaT) / 1000;
   lastTimestamp = timestamp;
 
   const isCollision = isThereCollision(ghosts, pacmanPos);
@@ -358,6 +359,7 @@ function tick(timestamp: number) {
       }
     }
   } else {
+    const deltaPx = (PACMAN_SPEED * deltaT) / 1000;
     const pacmanMoved = movePacman(deltaPx);
     if (pacmanMoved && timestamp - lastPacmanFrameTimestamp > PACMAN_ANIMATION_FRAME_LENGTH) {
       lastPacmanFrameTimestamp = timestamp;
@@ -365,7 +367,7 @@ function tick(timestamp: number) {
       if (pacmanFrame > 2) pacmanFrame = 0;
     }
 
-    moveGhosts(deltaPx, timestamp);
+    moveGhosts(deltaT, timestamp);
     if (timestamp - lastGhostFrameTimestamp > GHOST_ANIMATION_FRAME_LENGTH) {
       lastGhostFrameTimestamp = timestamp;
       ghostFrame++;
