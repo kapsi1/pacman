@@ -46,7 +46,7 @@ import {
 const debugEl = document.querySelector('#debug') as HTMLDivElement;
 // Max distance from cell center in pixels,
 // for a point to be counted as being in the center
-const epsilon = 0.3;
+const epsilon = 0.5;
 let pacmanPos: PxPos,
   pacmanDir: Direction,
   newDirection: Direction | null,
@@ -65,7 +65,8 @@ let pacmanPos: PxPos,
   lastLifeScore: number,
   ghosts: Ghost[],
   level: number,
-  dotsEaten: number;
+  dotsEaten: number,
+  isCollision: boolean;
 
 function resetLife() {
   isPaused = true;
@@ -82,6 +83,7 @@ function resetLife() {
   newDirection = null;
   isCornering = false;
   dotsEaten = 0;
+  isCollision = false;
   ghosts = JSON.parse(JSON.stringify(GHOST_STARTS));
   ghosts.forEach((ghost) => {
     ghost.lastChangedDirection = 0;
@@ -99,7 +101,7 @@ function resetLife() {
     }
   });
   showReadyText();
-  drawEverything(false);
+  drawEverything();
   setTimeout(() => {
     hideReadyText();
     isPaused = false;
@@ -134,7 +136,8 @@ function resetGameState() {
 }
 
 function moveGhosts(deltaT: number, timestamp: number) {
-  for (const ghost of ghosts) {
+  for (let i = 0; i < ghosts.length; i++) {
+    const ghost = ghosts[i];
     if (ghost.lastChangedDirection === 0) ghost.lastChangedDirection = timestamp;
     const deltaPx = (ghost.speed * deltaT) / 1000;
     //Prevent changing directions multiple times on intersections
@@ -177,7 +180,6 @@ function moveGhosts(deltaT: number, timestamp: number) {
       } else {
         const cellCenter: PxPos = gridToPx(ghostGridPos);
         const distanceToCellCenter = pointDistance(ghost.pos, cellCenter);
-
         if (distanceToCellCenter <= epsilon) {
           const { isIntersection, allowedDirections } = getAllowedDirections(ghost);
           if (isIntersection) {
@@ -333,7 +335,6 @@ document.addEventListener('keydown', (event) => {
       newDirection = Direction.Left;
       break;
   }
-  drawEverything(false);
 });
 
 function tick(timestamp: number) {
@@ -342,7 +343,7 @@ function tick(timestamp: number) {
   const deltaT = timestamp - lastTimestamp;
   lastTimestamp = timestamp;
 
-  const isCollision = isThereCollision(ghosts, pacmanPos);
+  isCollision = isThereCollision(ghosts, pacmanPos);
   if (isCollision) {
     if (timestamp - lastDeathFrameTimestamp > PACMAN_DEATH_FRAME_LENGTH) {
       lastDeathFrameTimestamp = timestamp;
@@ -375,11 +376,11 @@ function tick(timestamp: number) {
     }
   }
 
-  drawEverything(isCollision);
+  drawEverything();
   requestAnimationFrame(tick);
 }
 
-function drawEverything(isCollision: boolean) {
+function drawEverything() {
   ctx.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
   drawBoard();
   drawLives(lives);
