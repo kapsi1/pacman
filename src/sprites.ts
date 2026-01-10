@@ -1,6 +1,7 @@
 import { ctx } from './canvas';
-import { Direction, Ghost, GhostName, PxPos } from './types';
-import { DOT_SIZE, DEBUG_PACMAN, DEATH_ANIMATION_START_PAUSE_FRAMES, DEATH_ANIMATION_END_PAUSE_FRAMES } from './consts';
+import { Direction, GhostName } from './types';
+import type { Ghost, PxPos } from './types';
+import { DOT_SIZE, DEBUG_PACMAN, DEATH_ANIMATION_START_PAUSE_FRAMES, DEATH_ANIMATION_END_PAUSE_FRAMES, FRIGHTENED_FLASH_START_MS } from './consts';
 
 // Prepare sprites: load into a new <canvas>, get imageData,
 // and turn black pixels transparent
@@ -44,32 +45,54 @@ export function drawPacman(pos: PxPos, direction: Direction, frame: 0 | 1 | 2) {
   if (DEBUG_PACMAN) ctx.globalAlpha = 1;
 }
 
-function drawGhost(ghost: GhostName, pos: PxPos, direction: Direction, frame: 0 | 1) {
+function drawGhost(ghost: Ghost, frame: 0 | 1, useWhite: boolean) {
   const size = 14;
   let srcX = 1;
   let srcY = 65;
-  if (direction === Direction.Left) srcX += 2 * (size + 2);
-  if (direction === Direction.Up) srcX += 4 * (size + 2);
-  if (direction === Direction.Down) srcX += 6 * (size + 2);
-  if (frame === 1) srcX += size + 2;
-  if (ghost === GhostName.Pinky) srcY += size + 2;
-  if (ghost === GhostName.Inky) srcY += 2 * (size + 2);
-  if (ghost === GhostName.Clyde) srcY += 3 * (size + 2);
-  const destX = Math.round(pos.x - size / 2);
-  const destY = Math.round(pos.y - size / 2);
+  
+  if (ghost.frightened) {
+    if (useWhite) {
+      srcX = 161; // White frightened ghosts start at x=160 (161 with 1px offset)
+    } else {
+      srcX = 129; // Blue frightened ghosts start at x=128 (129 with 1px offset)
+    }
+    if (frame === 1) srcX += size + 2; // Next frame is 16px away
+  } else {
+    if (ghost.direction === Direction.Left) srcX += 2 * (size + 2);
+    if (ghost.direction === Direction.Up) srcX += 4 * (size + 2);
+    if (ghost.direction === Direction.Down) srcX += 6 * (size + 2);
+    if (frame === 1) srcX += size + 2;
+    if (ghost.name === GhostName.Pinky) srcY += size + 2;
+    if (ghost.name === GhostName.Inky) srcY += 2 * (size + 2);
+    if (ghost.name === GhostName.Clyde) srcY += 3 * (size + 2);
+  }
+  const destX = Math.round(ghost.pos.x - size / 2);
+  const destY = Math.round(ghost.pos.y - size / 2);
   ctx.drawImage(spriteCanvas, srcX, srcY, size, size, destX, destY, size, size);
 }
 
-export function drawGhosts(ghosts: Ghost[], frame: 0 | 1) {
-  ghosts.forEach((ghost) => drawGhost(ghost.name, ghost.pos, ghost.direction, frame));
+export function drawGhosts(ghosts: Ghost[], frame: 0 | 1, frightenedModeExpiresAt: number | null = null, timestamp: number = 0) {
+  ghosts.forEach((ghost) => {
+    let useWhite = false;
+    if (ghost.frightened && frightenedModeExpiresAt !== null) {
+      const timeRemaining = frightenedModeExpiresAt - timestamp;
+      if (timeRemaining < FRIGHTENED_FLASH_START_MS && timeRemaining > 0) {
+        const flashSpeed = 200;
+        if (Math.floor(timeRemaining / flashSpeed) % 2 === 0) {
+          useWhite = true;
+        }
+      }
+    }
+    drawGhost(ghost, frame, useWhite);
+  });
 }
 
 export function drawDeathAnimation(pos: PxPos, frame: number) {
   const size = 15;
   if (frame < DEATH_ANIMATION_START_PAUSE_FRAMES) return;
   if (frame > DEATH_ANIMATION_START_PAUSE_FRAMES + DEATH_ANIMATION_END_PAUSE_FRAMES) return;
-  let srcX = 48 + (size + 1) * (frame - DEATH_ANIMATION_START_PAUSE_FRAMES);
-  let srcY = 1;
+  const srcX = 48 + (size + 1) * (frame - DEATH_ANIMATION_START_PAUSE_FRAMES);
+  const srcY = 1;
   const destX = Math.round(pos.x - size / 2);
   const destY = Math.round(pos.y - size / 2);
   ctx.drawImage(spriteCanvas, srcX, srcY, size, size, destX, destY, size, size);

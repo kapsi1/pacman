@@ -18,6 +18,10 @@ export const STARTING_PAUSE = 2_000;
 export const EAT_DOT_PAUSE_MS = 1000 / 60;
 export const EAT_ENERGIZER_PAUSE_MS = (1000 / 60) * 3;
 
+// Frightened Mode
+export const FRIGHTENED_DURATION_MS = 6000;
+export const FRIGHTENED_FLASH_START_MS = 2000;
+
 // Wait 10 frames, play death animation, wait another 10 frames
 export const DEATH_ANIMATION_FRAMES = 10;
 export const DEATH_ANIMATION_START_PAUSE_FRAMES = 10;

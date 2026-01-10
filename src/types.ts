@@ -31,4 +31,5 @@ export type Ghost = {
   dotLimit?: number;
   canLeave: boolean;
   speed: number;
+  frightened: boolean;
 };

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sprite Verifier</title>
+</head>
+<body style="background: #333; color: white;">
+    <h1>Sprite Verifier</h1>
+    <img id="sprites" src="../assets/spritesheet.png" style="display: none;">
+    <canvas id="canvas" width="400" height="400" style="border: 1px solid white;"></canvas>
+    <div id="log"></div>
+
+    <script>
+        window.onload = function() {
+            const img = document.getElementById('sprites');
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Draw full sheet scaled up
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(img, 0, 0);
+            
+            // Highlight Rows
+            // Expected Ghosts:
+            // Blinky: y=65
+            // Pinky: y=81
+            // Inky: y=97
+            // Clyde: y=113
+            // Suspected Frightened: y=129
+            
+            const rows = [65, 81, 97, 113, 129, 145];
+            const colors = ['red', 'pink', 'cyan', 'orange', 'blue', 'white'];
+            
+            rows.forEach((y, i) => {
+                ctx.strokeStyle = colors[i] || 'yellow';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(0, y, img.width, 16);
+                
+                ctx.fillStyle = colors[i] || 'yellow';
+                ctx.fillText('y=' + y, 200, y + 10);
+            });
+            
+            // Draw specific sprites from y=129
+            // Frame 0 assumed at x=1?
+            const size = 14;
+            // Draw what we think is Blue Frame 1 at 10, 200
+            ctx.drawImage(img, 1, 129, size, size, 10, 200, size * 2, size * 2);
+            // Frame 2 at x = 1 + 16?
+            ctx.drawImage(img, 17, 129, size, size, 50, 200, size * 2, size * 2);
+            
+            // Try x=33 (next 16)
+            ctx.drawImage(img, 33, 129, size, size, 90, 200, size * 2, size * 2);
+            
+            // Try x=49
+             ctx.drawImage(img, 49, 129, size, size, 130, 200, size * 2, size * 2);
+
+             // Try y=145 if 129 isn't it or if white is there
+             ctx.drawImage(img, 1, 145, size, size, 10, 250, size * 2, size * 2);
+        };
+    </script>
+</body>
+</html>
