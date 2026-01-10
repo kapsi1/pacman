@@ -19,18 +19,19 @@ export function pxToGrid(pxPos: PxPos): GridPos {
   };
 }
 
-export function pointDistance(point1: PxPos, point2: PxPos) {
+export function pointDistance(point1: PxPos, point2: PxPos): number {
+  // d = √((x₂ - x₁)² + (y₂ - y₁)²)
   return Math.sqrt(Math.pow(point1.x - point2.x, 2) + Math.pow(point1.y - point2.y, 2));
 }
 
-export function isCellAllowed(gridPos: GridPos) {
+export function isCellAllowed(gridPos: GridPos): boolean {
   if (!board[gridPos.y]) return false;
   if (!board[gridPos.y][gridPos.x]) return false;
   if (board[gridPos.y][gridPos.x] === '#') return false;
   return true;
 }
 
-export function getNextCell(gridPos: GridPos, direction: Direction) {
+export function getNextCell(gridPos: GridPos, direction: Direction): GridPos {
   let x = gridPos.x;
   let y = gridPos.y;
   if (direction === Direction.Down) y++;
@@ -57,7 +58,8 @@ export function getAllowedDirections(ghost: Ghost) {
   const directions = [Direction.Up, Direction.Down, Direction.Left, Direction.Right];
   const gDir = ghost.direction;
 
-  for (let dir of directions) {
+  for (let i = 0; i < directions.length; i++) {
+    const dir = directions[i];
     // Don't allow reversing direction
     if (dir === Direction.Left && gDir === Direction.Right) continue;
     if (dir === Direction.Right && gDir === Direction.Left) continue;
@@ -73,7 +75,7 @@ export function getAllowedDirections(ghost: Ghost) {
   return { isIntersection, allowedDirections };
 }
 
-export function randomInt(min: number, max: number) {
+export function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
@@ -97,8 +99,9 @@ export function teleportCharacter(direction: Direction, cell: GridPos) {
   return null;
 }
 
-export function isThereCollision(ghosts: Ghost[], pacmanPos: PxPos) {
-  for (const ghost of ghosts) {
+export function isThereCollision(ghosts: Ghost[], pacmanPos: PxPos): boolean {
+  for (let i = 0; i < ghosts.length; i++) {
+    const ghost = ghosts[i];
     const distance = pointDistance(ghost.pos, pacmanPos);
     if (distance <= 1) {
       return true;

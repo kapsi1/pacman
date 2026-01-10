@@ -15,6 +15,8 @@ export const PACMAN_ANIMATION_FRAME_LENGTH = 70;
 export const GHOST_ANIMATION_FRAME_LENGTH = 300;
 export const PACMAN_DEATH_FRAME_LENGTH = 150;
 export const STARTING_PAUSE = 2_000;
+export const EAT_DOT_PAUSE_MS = 1000 / 60;
+export const EAT_ENERGIZER_PAUSE_MS = (1000 / 60) * 3;
 
 // Wait 10 frames, play death animation, wait another 10 frames
 export const DEATH_ANIMATION_FRAMES = 10;

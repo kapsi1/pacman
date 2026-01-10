@@ -1,8 +1,9 @@
+//pause for 1/60s after eating a dot, 3/60 after energizer
+energizers
 fruit
 ghost AI
-ghosts have different speed than pacman
-ghosts have different speed in tunnels
-energizers
+forbidden zones for ghosts
+ghosts leave pen after time
 sound
 mute & fullscreen buttons
 next level

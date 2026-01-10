@@ -18,6 +18,8 @@ import {
   GHOST_PEN_EXIT_Y,
   GHOST_PEN_BOTTOM_WALL_Y,
   GHOST_PEN_TOP_WALL_Y,
+  EAT_DOT_PAUSE_MS,
+  EAT_ENERGIZER_PAUSE_MS,
 } from './consts';
 import { ctx, SCREEN_HEIGHT, SCREEN_WIDTH } from './canvas';
 import { drawBoard } from './board';
@@ -42,7 +44,6 @@ import {
   showReadyText,
   getPacmanSpeed,
   getGhostSpeed,
-  isInTunnel,
 } from './utils';
 
 const debugEl = document.querySelector('#debug') as HTMLDivElement;
@@ -69,7 +70,8 @@ let pacmanPos: PxPos,
   level: number,
   dotsEaten: number,
   isCollision: boolean,
-  pacmanSpeed: number;
+  pacmanSpeed: number,
+  pacmanPauseTimeRemaining: number;
 
 function resetLife() {
   isPaused = true;
@@ -87,6 +89,7 @@ function resetLife() {
   isCornering = false;
   dotsEaten = 0;
   isCollision = false;
+  pacmanPauseTimeRemaining = 0;
   ghosts = JSON.parse(JSON.stringify(GHOST_STARTS));
   ghosts.forEach((ghost) => {
     ghost.lastChangedDirection = 0;
@@ -286,9 +289,11 @@ function movePacman(deltaPx: number) {
       score += 10;
       scoreChanged = true;
       dotsEaten++;
+      pacmanPauseTimeRemaining += EAT_DOT_PAUSE_MS;
     } else if (board[newCell.y] && board[newCell.y][newCell.x] === 'o') {
       score += 50;
       scoreChanged = true;
+      pacmanPauseTimeRemaining += EAT_ENERGIZER_PAUSE_MS;
     }
 
     if (scoreChanged) {
@@ -370,7 +375,12 @@ function tick(timestamp: number) {
       }
     }
   } else {
-    const deltaPx = (pacmanSpeed * deltaT) / 1000;
+    let effectiveDeltaT = deltaT;
+    if (pacmanPauseTimeRemaining > 0) {
+      effectiveDeltaT = Math.max(0, deltaT - pacmanPauseTimeRemaining);
+      pacmanPauseTimeRemaining -= deltaT;
+    }
+    const deltaPx = (pacmanSpeed * effectiveDeltaT) / 1000;
     const pacmanMoved = movePacman(deltaPx);
     if (pacmanMoved && timestamp - lastPacmanFrameTimestamp > PACMAN_ANIMATION_FRAME_LENGTH) {
       lastPacmanFrameTimestamp = timestamp;
@@ -393,7 +403,7 @@ function tick(timestamp: number) {
 function drawEverything() {
   ctx.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
   drawBoard();
-  drawLives(lives);
+  drawLives(lives - 1);
   // After a collision, show ghosts for DEATH_ANIMATION_START_PAUSE_FRAMES,
   // then hide them for the rest of death animation
   if (isCollision && deathAnimationFrame >= DEATH_ANIMATION_START_PAUSE_FRAMES) {
