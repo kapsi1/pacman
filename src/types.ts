@@ -32,4 +32,5 @@ export type Ghost = {
   canLeave: boolean;
   speed: number;
   frightened: boolean;
+  isEyes: boolean;
 };

@@ -51,6 +51,7 @@ import {
 	showReadyText,
 	getPacmanSpeed,
 	getGhostSpeed,
+	getBestDirection,
 } from "./utils";
 
 const debugEl = document.querySelector("#debug") as HTMLDivElement;
@@ -102,6 +103,7 @@ function resetLife() {
 	ghosts = JSON.parse(JSON.stringify(GHOST_STARTS));
 	ghosts.forEach((ghost) => {
 		ghost.lastChangedDirection = 0;
+		ghost.isEyes = false;
 		ghost.inPen = ghost.name !== GhostName.Blinky;
 		switch (ghost.name) {
 			case GhostName.Pinky:
@@ -134,6 +136,7 @@ function resetGameState() {
 	resetLife();
 	ghosts.forEach((ghost) => {
 		ghost.frightened = false;
+		ghost.isEyes = false;
 		switch (ghost.name) {
 			case GhostName.Pinky:
 				delete ghost.dotLimit;
@@ -200,6 +203,31 @@ function moveGhosts(deltaT: number, timestamp: number) {
 					ghost.direction = Direction.Up;
 				}
 			}
+		} else if (ghost.isEyes) {
+			const penExit: PxPos = { x: GHOST_PEN_CENTER_X, y: GHOST_PEN_EXIT_Y };
+			const distToExit = pointDistance(ghost.pos, penExit);
+			if (distToExit <= epsilon) {
+				ghost.isEyes = false;
+				ghost.inPen = true;
+				ghost.pos = { x: GHOST_PEN_CENTER_X, y: GHOST_PEN_CENTER_Y };
+				ghost.speed = getGhostSpeed(level);
+			} else {
+				const ghostGridPos: GridPos = pxToGrid(ghost.pos);
+				const cellCenter: PxPos = gridToPx(ghostGridPos);
+				const distanceToCellCenter = pointDistance(ghost.pos, cellCenter);
+				if (distanceToCellCenter <= epsilon) {
+					const { isIntersection, allowedDirections } = getAllowedDirections(ghost);
+					if (isIntersection) {
+						ghost.direction = getBestDirection(ghost, penExit, allowedDirections);
+						ghost.lastChangedDirection = timestamp;
+						if (isHorizontalDir(ghost.direction)) {
+							ghost.pos.y = Math.round(ghost.pos.y);
+						} else {
+							ghost.pos.x = Math.round(ghost.pos.x);
+						}
+					}
+				}
+			}
 		} else if (timestamp - ghost.lastChangedDirection > minDeltaT) {
 			const ghostGridPos: GridPos = pxToGrid(ghost.pos);
 			const teleportedPos = teleportCharacter(ghost.direction, ghostGridPos);
@@ -239,6 +267,7 @@ function moveGhosts(deltaT: number, timestamp: number) {
 	if (frightenedModeExpiresAt !== null && timestamp > frightenedModeExpiresAt) {
 		frightenedModeExpiresAt = null;
 		ghosts.forEach((ghost) => {
+			if (ghost.isEyes) return;
 			ghost.frightened = false;
 			ghost.speed = getGhostSpeed(
 				level,
@@ -408,17 +437,16 @@ function tick(timestamp: number) {
 	isCollision = isThereCollision(ghosts, pacmanPos);
 	if (isCollision) {
 		const collidedGhost = ghosts.find(
-			(g) => pointDistance(g.pos, pacmanPos) <= 1,
+			(g) => !g.isEyes && pointDistance(g.pos, pacmanPos) <= 1,
 		);
-	if (collidedGhost?.frightened) {
+		if (collidedGhost?.frightened) {
 			// Eat Ghost
 			score += 200; // Simplified scoring
 			updateScore(score.toString());
 			collidedGhost.frightened = false;
-			collidedGhost.inPen = true;
-			collidedGhost.pos = { x: GHOST_PEN_CENTER_X, y: GHOST_PEN_CENTER_Y };
-			collidedGhost.speed = getGhostSpeed(level);
-		} else {
+			collidedGhost.isEyes = true;
+			collidedGhost.speed = getGhostSpeed(level, false, false, true);
+		} else if (collidedGhost && !collidedGhost.isEyes) {
 			if (timestamp - lastDeathFrameTimestamp > PACMAN_DEATH_FRAME_LENGTH) {
 				lastDeathFrameTimestamp = timestamp;
 				deathAnimationFrame++;

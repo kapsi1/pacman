@@ -1,5 +1,5 @@
 //pause for 1/60s after eating a dot, 3/60 after energizer
-energizers
+//energizers
 fruit
 ghost AI
 forbidden zones for ghosts

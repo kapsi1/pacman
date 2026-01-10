@@ -50,7 +50,13 @@ function drawGhost(ghost: Ghost, frame: 0 | 1, useWhite: boolean) {
   let srcX = 1;
   let srcY = 65;
   
-  if (ghost.frightened) {
+  if (ghost.isEyes) {
+    srcY = 81; // Eyes row
+    if (ghost.direction === Direction.Right) srcX = 129;
+    else if (ghost.direction === Direction.Left) srcX = 145;
+    else if (ghost.direction === Direction.Up) srcX = 161;
+    else srcX = 177;
+  } else if (ghost.frightened) {
     if (useWhite) {
       srcX = 161; // White frightened ghosts start at x=160 (161 with 1px offset)
     } else {

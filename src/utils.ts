@@ -1,6 +1,7 @@
 import { TOP_MARGIN } from './canvas';
 import { WALL_MARGIN, CELL_SIZE, board, FULL_SPEED } from './consts';
-import { Direction, Ghost, GridPos, PxPos } from './types';
+import { Direction } from './types';
+import type { Ghost, GridPos, PxPos } from './types';
 
 export const isHorizontalDir = (direction: Direction) => direction === Direction.Left || direction === Direction.Right;
 
@@ -102,6 +103,7 @@ export function teleportCharacter(direction: Direction, cell: GridPos) {
 export function isThereCollision(ghosts: Ghost[], pacmanPos: PxPos): boolean {
   for (let i = 0; i < ghosts.length; i++) {
     const ghost = ghosts[i];
+    if (ghost.isEyes) continue;
     const distance = pointDistance(ghost.pos, pacmanPos);
     if (distance <= 1) {
       return true;
@@ -156,7 +158,8 @@ export function getPacmanSpeed(level: number, isFright = false): number {
   }
 }
 
-export function getGhostSpeed(level: number, isFright = false, isTunnel = false): number {
+export function getGhostSpeed(level: number, isFright = false, isTunnel = false, isEyes = false): number {
+  if (isEyes) return FULL_SPEED * 2;
   if (level === 1) {
     if (isFright) return FULL_SPEED * 0.5;
     if (isTunnel) return FULL_SPEED * 0.4;
@@ -173,4 +176,22 @@ export function getGhostSpeed(level: number, isFright = false, isTunnel = false)
     if (isTunnel) return FULL_SPEED * 0.5;
     return FULL_SPEED * 0.95;
   }
+}
+
+export function getBestDirection(ghost: Ghost, target: PxPos, allowedDirections: Direction[]): Direction {
+  if (allowedDirections.length === 0) return ghost.direction;
+  let bestDir = allowedDirections[0];
+  let minDistance = Infinity;
+  const currentCell = pxToGrid(ghost.pos);
+
+  for (const dir of allowedDirections) {
+    const nextCell = getNextCell(currentCell, dir);
+    const nextPos = gridToPx(nextCell);
+    const dist = pointDistance(nextPos, target);
+    if (dist < minDistance) {
+      minDistance = dist;
+      bestDir = dir;
+    }
+  }
+  return bestDir;
 }
