@@ -1,10 +1,14 @@
-//pause for 1/60s after eating a dot, 3/60 after energizer
-//energizers
-fruit
-ghost AI
-forbidden zones for ghosts
-ghosts leave pen after time
-sound
-mute & fullscreen buttons
-next level
-cutscenes
+- [ ] Implement forbidden zones for ghosts
+- [ ] Ghost AI: Implement individual tracking logic (Blinky, Pinky, Inky, Clyde)
+- [ ] Ghost AI: Implement Scatter/Chase mode timer cycles
+- [ ] Ghost AI: Implement fixed target tiles for Scatter mode
+- [ ] Ghost AI: Implement "Cruise Elroy" speed increases for Blinky
+- [ ] Gameplay: Implement Fruit spawning (70/170 dots) and scoring
+- [ ] Gameplay: Implement correct ghost eating score multiplier (200, 400, 800, 1600)
+- [ ] Gameplay: Implement Level 256 "Kill Screen" glitch
+- [ ] Gameplay: Implement Pinky's "Up/Left" targeting bug
+- [ ] Audio: Add sound effects (Waka, Siren, Power Pellet, Eat Ghost, Death)
+- [ ] Audio: Add "Ready!" music and start-of-game intro
+- [ ] UX: Implement Intermission cutscenes
+- [ ] UX: Mute and Fullscreen controls
+- [ ] Visuals: Add fruit sprites
