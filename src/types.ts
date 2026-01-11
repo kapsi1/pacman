@@ -34,3 +34,14 @@ export type Ghost = {
   frightened: boolean;
   isEyes: boolean;
 };
+
+export interface PacmanState {
+  pos: PxPos;
+  dir: Direction;
+  nextDir: Direction | null;
+  speed: number;
+  pauseTimeRemaining: number;
+  isCornering: boolean;
+  frame: 0 | 1 | 2;
+  lastFrameTimestamp: number;
+}

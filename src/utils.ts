@@ -1,7 +1,7 @@
 import { TOP_MARGIN } from './canvas';
 import { WALL_MARGIN, CELL_SIZE, board, FULL_SPEED, GHOST_NO_UP_TILES } from './consts';
-import { Direction } from './types';
-import type { Ghost, GridPos, PxPos } from './types';
+import { Direction, GhostName } from './types';
+import type { Ghost, GridPos, PxPos, PacmanState } from './types';
 
 export const isHorizontalDir = (direction: Direction) => direction === Direction.Left || direction === Direction.Right;
 
@@ -206,4 +206,59 @@ export function getBestDirection(ghost: Ghost, target: PxPos, allowedDirections:
     }
   }
   return bestDir;
+}
+
+export function getGhostTarget(ghost: Ghost, pacman: PacmanState, blinkyPos: PxPos): PxPos {
+  const pacmanGridPos = pxToGrid(pacman.pos);
+
+  switch (ghost.name) {
+    case GhostName.Blinky:
+      return pacman.pos;
+
+    case GhostName.Pinky: {
+      // Pinky targets 4 tiles ahead of Pac-Man.
+      // If Pac-Man is facing UP, include the offset bug (4 tiles UP, 4 tiles LEFT).
+      let targetGrid = getNextCell(pacmanGridPos, pacman.dir);
+      for (let i = 1; i < 4; i++) {
+        targetGrid = getNextCell(targetGrid, pacman.dir);
+      }
+      if (pacman.dir === Direction.Up) {
+        targetGrid.x -= 4;
+      }
+      return gridToPx(targetGrid);
+    }
+
+    case GhostName.Inky: {
+      // Inky uses a vector relative to Blinky.
+      // 1. Pivot point is 2 tiles ahead of Pac-Man.
+      // 2. Vector = Pivot - Blinky.
+      // 3. Target = Pivot + Vector.
+      let pivotGrid = getNextCell(pacmanGridPos, pacman.dir);
+      pivotGrid = getNextCell(pivotGrid, pacman.dir);
+      if (pacman.dir === Direction.Up) {
+        pivotGrid.x -= 2;
+      }
+      const pivotPx = gridToPx(pivotGrid);
+      const vectorX = pivotPx.x - blinkyPos.x;
+      const vectorY = pivotPx.y - blinkyPos.y;
+      return {
+        x: pivotPx.x + vectorX,
+        y: pivotPx.y + vectorY,
+      };
+    }
+
+    case GhostName.Clyde: {
+      // Clyde targets Pac-Man if > 8 tiles away.
+      // Otherwise, targets his home corner (Scatter target).
+      const dist = pointDistance(ghost.pos, pacman.pos);
+      if (dist > 8 * CELL_SIZE) {
+        return pacman.pos;
+      }
+      // Clyde's scatter target (Bottom-Left)
+      return gridToPx({ x: 0, y: 31 });
+    }
+
+    default:
+      return pacman.pos;
+  }
 }

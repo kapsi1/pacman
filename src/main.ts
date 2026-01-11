@@ -1,4 +1,4 @@
-import { Direction, Ghost, GhostName, GridPos, PxPos } from "./types";
+import { Direction, Ghost, GhostName, GridPos, PacmanState, PxPos } from "./types";
 import {
 	CELL_SIZE,
 	GHOST_ANIMATION_FRAME_LENGTH,
@@ -44,7 +44,6 @@ import {
 	isCellAllowed,
 	offsetPos,
 	getAllowedDirections,
-	randomInt,
 	teleportCharacter,
 	isThereCollision,
 	updateScore,
@@ -55,6 +54,7 @@ import {
 	getPacmanSpeed,
 	getGhostSpeed,
 	getBestDirection,
+	getGhostTarget,
 } from "./utils";
 
 const epsilon = 0.5;
@@ -70,17 +70,6 @@ interface GameState {
 	isCollision: boolean;
 	lastTimestamp: number | null;
 	frightenedModeExpiresAt: number | null;
-}
-
-interface PacmanState {
-	pos: PxPos;
-	dir: Direction;
-	nextDir: Direction | null;
-	speed: number;
-	pauseTimeRemaining: number;
-	isCornering: boolean;
-	frame: 0 | 1 | 2;
-	lastFrameTimestamp: number;
 }
 
 interface AnimationState {
@@ -272,7 +261,7 @@ function updateGhostEyes(ghost: Ghost, timestamp: number) {
 }
 
 function updateGhostNormal(ghost: Ghost, timestamp: number) {
-	const ghostGridPos: GridPos = pxToGrid(ghost.pos);
+	const ghostGridPos = pxToGrid(ghost.pos);
 	const teleportedPos = teleportCharacter(ghost.direction, ghostGridPos);
 
 	if (teleportedPos !== null) {
@@ -280,14 +269,16 @@ function updateGhostNormal(ghost: Ghost, timestamp: number) {
 		return;
 	}
 
-	const cellCenter: PxPos = gridToPx(ghostGridPos);
+	const cellCenter = gridToPx(ghostGridPos);
 	const distanceToCellCenter = pointDistance(ghost.pos, cellCenter);
 
 	if (distanceToCellCenter <= epsilon) {
 		const { isIntersection, allowedDirections } = getAllowedDirections(ghost);
 		if (isIntersection) {
-			const randomDir = allowedDirections[randomInt(0, allowedDirections.length - 1)];
-			ghost.direction = randomDir;
+			const blinky = ghosts.find((g) => g.name === GhostName.Blinky);
+			const blinkyPos = blinky ? blinky.pos : ghost.pos;
+			const target = getGhostTarget(ghost, pacman, blinkyPos);
+			ghost.direction = getBestDirection(ghost, target, allowedDirections);
 			ghost.lastChangedDirection = timestamp;
 			if (isHorizontalDir(ghost.direction)) {
 				ghost.pos.y = Math.round(ghost.pos.y);
