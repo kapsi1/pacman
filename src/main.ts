@@ -28,6 +28,7 @@ import {
 	GHOST_MODE_PATTERN_L1,
 	GHOST_MODE_PATTERN_L2_L4,
 	GHOST_MODE_PATTERN_L5_PLUS,
+	GHOST_EATEN_PAUSE_MS,
 } from "./consts";
 import { ctx, SCREEN_HEIGHT, SCREEN_WIDTH } from "./canvas";
 import { drawBoard } from "./board";
@@ -76,6 +77,7 @@ interface GameState {
 	ghostMode: GhostMode;
 	ghostModeIndex: number;
 	ghostModeTimer: number;
+	ghostsEatenThisEnergizer: number;
 }
 
 interface AnimationState {
@@ -83,6 +85,9 @@ interface AnimationState {
 	deathAnimationFrame: number;
 	lastGhostFrameTimestamp: number;
 	lastDeathFrameTimestamp: number;
+	ghostEatenPauseTimer: number;
+	ghostEatenScore: number;
+	ghostEatenPos: PxPos | null;
 }
 
 const gameState: GameState = {
@@ -99,6 +104,7 @@ const gameState: GameState = {
 	ghostMode: GhostMode.Scatter,
 	ghostModeIndex: 0,
 	ghostModeTimer: 0,
+	ghostsEatenThisEnergizer: 0,
 };
 
 const pacman: PacmanState = {
@@ -117,6 +123,9 @@ const anim: AnimationState = {
 	deathAnimationFrame: 0,
 	lastGhostFrameTimestamp: 0,
 	lastDeathFrameTimestamp: 0,
+	ghostEatenPauseTimer: 0,
+	ghostEatenScore: 0,
+	ghostEatenPos: null,
 };
 
 let ghosts: Ghost[] = [];
@@ -133,6 +142,11 @@ function resetLife() {
 	gameState.ghostMode = GhostMode.Scatter;
 	gameState.ghostModeIndex = 0;
 	gameState.ghostModeTimer = 0;
+	gameState.ghostsEatenThisEnergizer = 0;
+
+	anim.ghostEatenPauseTimer = 0;
+	anim.ghostEatenScore = 0;
+	anim.ghostEatenPos = null;
 
 	pacman.pos = gridToPx(PACMAN_START_POS);
 	pacman.pos.x += 3;
@@ -456,6 +470,7 @@ function handlePacmanCollisions(cell: GridPos) {
 	} else if (cellContent === "o") {
 		gameState.score += 50;
 		scoreChanged = true;
+		gameState.ghostsEatenThisEnergizer = 0;
 		pacman.pauseTimeRemaining += EAT_ENERGIZER_PAUSE_MS;
 		gameState.frightenedModeExpiresAt = performance.now() + FRIGHTENED_DURATION_MS;
 		ghosts.forEach((ghost) => {
@@ -519,11 +534,19 @@ function handleGhostEating() {
 		(g) => !g.isEyes && pointDistance(g.pos, pacman.pos) <= COLLISION_DISTANCE,
 	);
 	if (collidedGhost?.frightened) {
-		gameState.score += 200;
+		gameState.ghostsEatenThisEnergizer++;
+		const scoreGained = Math.pow(2, gameState.ghostsEatenThisEnergizer) * 100;
+		gameState.score += scoreGained;
 		updateScore(gameState.score.toString());
+
 		collidedGhost.frightened = false;
 		collidedGhost.isEyes = true;
 		collidedGhost.speed = getGhostSpeed(gameState.level, false, false, true);
+
+		anim.ghostEatenPauseTimer = GHOST_EATEN_PAUSE_MS;
+		anim.ghostEatenScore = scoreGained;
+		anim.ghostEatenPos = { ...collidedGhost.pos };
+
 		return true;
 	}
 	return false;
@@ -556,6 +579,14 @@ function tick(timestamp: number) {
 	if (gameState.lastTimestamp === null) gameState.lastTimestamp = timestamp;
 	const deltaT = timestamp - gameState.lastTimestamp;
 	gameState.lastTimestamp = timestamp;
+
+	if (anim.ghostEatenPauseTimer > 0) {
+		anim.ghostEatenPauseTimer -= deltaT;
+		if (anim.ghostEatenPauseTimer < 0) anim.ghostEatenPauseTimer = 0;
+		drawEverything(timestamp);
+		requestAnimationFrame(tick);
+		return;
+	}
 
 	updateGhostMode(deltaT);
 
@@ -602,6 +633,17 @@ function drawEverything(timestamp: number) {
 
 	if (showDeath) {
 		drawDeathAnimation(pacman.pos, anim.deathAnimationFrame);
+	} else if (anim.ghostEatenPauseTimer > 0 && anim.ghostEatenPos) {
+		// Draw the gained score
+		ctx.fillStyle = "cyan";
+		ctx.font = "8px 'Press Start'";
+		ctx.textAlign = "center";
+		ctx.textBaseline = "middle";
+		ctx.fillText(
+			anim.ghostEatenScore.toString(),
+			anim.ghostEatenPos.x,
+			anim.ghostEatenPos.y,
+		);
 	} else {
 		drawPacman(pacman.pos, pacman.dir, pacman.frame);
 		drawGhosts(ghosts, anim.ghostFrame, gameState.frightenedModeExpiresAt, timestamp);

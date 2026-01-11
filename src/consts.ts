@@ -21,6 +21,7 @@ export const EAT_ENERGIZER_PAUSE_MS = (1000 / 60) * 3;
 // Frightened Mode
 export const FRIGHTENED_DURATION_MS = 6000;
 export const FRIGHTENED_FLASH_START_MS = 2000;
+export const GHOST_EATEN_PAUSE_MS = 1000;
 
 // Wait 10 frames, play death animation, wait another 10 frames
 export const DEATH_ANIMATION_FRAMES = 10;

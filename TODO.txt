@@ -4,9 +4,10 @@
 - [x] Ghost AI: Implement fixed target tiles for Scatter mode
 - [ ] Ghost AI: Implement "Cruise Elroy" speed increases for Blinky
 - [ ] Gameplay: Implement Fruit spawning (70/170 dots) and scoring
-- [ ] Gameplay: Implement correct ghost eating score multiplier (200, 400, 800, 1600)
+- [x] Gameplay: Implement correct ghost eating score multiplier (200, 400, 800, 1600)
+- [x] Gameplay: Implement Pinky's "Up/Left" targeting bug
+- [x] Visuals: Pause game, hide characters, and show score after eating a ghost
 - [ ] Gameplay: Implement Level 256 "Kill Screen" glitch
-- [ ] Gameplay: Implement Pinky's "Up/Left" targeting bug
 - [ ] Audio: Add sound effects (Waka, Siren, Power Pellet, Eat Ghost, Death)
 - [ ] Audio: Add "Ready!" music and start-of-game intro
 - [ ] UX: Implement Intermission cutscenes
