@@ -1,6 +1,6 @@
 import { TOP_MARGIN } from './canvas';
-import { WALL_MARGIN, CELL_SIZE, board, FULL_SPEED, GHOST_NO_UP_TILES } from './consts';
-import { Direction, GhostName } from './types';
+import { WALL_MARGIN, CELL_SIZE, board, FULL_SPEED, GHOST_NO_UP_TILES, SCATTER_TARGETS } from './consts';
+import { Direction, GhostMode, GhostName } from './types';
 import type { Ghost, GridPos, PxPos, PacmanState } from './types';
 
 export const isHorizontalDir = (direction: Direction) => direction === Direction.Left || direction === Direction.Right;
@@ -128,34 +128,35 @@ const scoreEl = document.querySelector('#score') as HTMLDivElement;
 const highScoreEl = document.querySelector('#high-score') as HTMLDivElement;
 
 export function updateScore(score: string) {
+  if (!scoreEl) return;
   scoreEl.textContent = score;
   let highScore = localStorage.getItem('highScore') || '0';
 
   if (parseInt(score) > parseInt(highScore)) {
     highScore = score;
     localStorage.setItem('highScore', highScore);
-    highScoreEl.textContent = highScore;
+    if (highScoreEl) highScoreEl.textContent = highScore;
   }
 }
 
-highScoreEl.textContent = localStorage.getItem('highScore') || '00';
+if (highScoreEl) highScoreEl.textContent = localStorage.getItem('highScore') || '00';
 
 const readyTextEl = document.querySelector('#ready') as HTMLDivElement;
 export function showReadyText() {
-  readyTextEl.style.display = 'block';
+  if (readyTextEl) readyTextEl.style.display = 'block';
 }
 
 export function hideReadyText() {
-  readyTextEl.style.display = 'none';
+  if (readyTextEl) readyTextEl.style.display = 'none';
 }
 
 const gameOverTextEl = document.querySelector('#game-over') as HTMLDivElement;
 export function showGameOver() {
-  gameOverTextEl.style.display = 'block';
+  if (gameOverTextEl) gameOverTextEl.style.display = 'block';
 }
 
 export function hideGameOver() {
-  gameOverTextEl.style.display = 'none';
+  if (gameOverTextEl) gameOverTextEl.style.display = 'none';
 }
 
 export function getPacmanSpeed(level: number, isFright = false): number {
@@ -208,7 +209,16 @@ export function getBestDirection(ghost: Ghost, target: PxPos, allowedDirections:
   return bestDir;
 }
 
-export function getGhostTarget(ghost: Ghost, pacman: PacmanState, blinkyPos: PxPos): PxPos {
+export function getGhostTarget(ghost: Ghost, pacman: PacmanState, blinkyPos: PxPos, currentMode: GhostMode): PxPos {
+  if (currentMode === GhostMode.Scatter) {
+    switch (ghost.name) {
+      case GhostName.Blinky: return gridToPx(SCATTER_TARGETS.Blinky);
+      case GhostName.Pinky: return gridToPx(SCATTER_TARGETS.Pinky);
+      case GhostName.Inky: return gridToPx(SCATTER_TARGETS.Inky);
+      case GhostName.Clyde: return gridToPx(SCATTER_TARGETS.Clyde);
+    }
+  }
+
   const pacmanGridPos = pxToGrid(pacman.pos);
 
   switch (ghost.name) {
@@ -216,8 +226,6 @@ export function getGhostTarget(ghost: Ghost, pacman: PacmanState, blinkyPos: PxP
       return pacman.pos;
 
     case GhostName.Pinky: {
-      // Pinky targets 4 tiles ahead of Pac-Man.
-      // If Pac-Man is facing UP, include the offset bug (4 tiles UP, 4 tiles LEFT).
       let targetGrid = getNextCell(pacmanGridPos, pacman.dir);
       for (let i = 1; i < 4; i++) {
         targetGrid = getNextCell(targetGrid, pacman.dir);
@@ -229,10 +237,6 @@ export function getGhostTarget(ghost: Ghost, pacman: PacmanState, blinkyPos: PxP
     }
 
     case GhostName.Inky: {
-      // Inky uses a vector relative to Blinky.
-      // 1. Pivot point is 2 tiles ahead of Pac-Man.
-      // 2. Vector = Pivot - Blinky.
-      // 3. Target = Pivot + Vector.
       let pivotGrid = getNextCell(pacmanGridPos, pacman.dir);
       pivotGrid = getNextCell(pivotGrid, pacman.dir);
       if (pacman.dir === Direction.Up) {
@@ -248,14 +252,11 @@ export function getGhostTarget(ghost: Ghost, pacman: PacmanState, blinkyPos: PxP
     }
 
     case GhostName.Clyde: {
-      // Clyde targets Pac-Man if > 8 tiles away.
-      // Otherwise, targets his home corner (Scatter target).
       const dist = pointDistance(ghost.pos, pacman.pos);
       if (dist > 8 * CELL_SIZE) {
         return pacman.pos;
       }
-      // Clyde's scatter target (Bottom-Left)
-      return gridToPx({ x: 0, y: 31 });
+      return gridToPx(SCATTER_TARGETS.Clyde);
     }
 
     default:

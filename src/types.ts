@@ -1,3 +1,8 @@
+export enum GhostMode {
+  Scatter = 'scatter',
+  Chase = 'chase',
+}
+
 export enum Direction {
   Left = 'left',
   Up = 'up',

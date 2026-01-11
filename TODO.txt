@@ -1,7 +1,7 @@
 - [x] Implement forbidden zones for ghosts
 - [x] Ghost AI: Implement individual tracking logic (Blinky, Pinky, Inky, Clyde)
-- [ ] Ghost AI: Implement Scatter/Chase mode timer cycles
-- [ ] Ghost AI: Implement fixed target tiles for Scatter mode
+- [x] Ghost AI: Implement Scatter/Chase mode timer cycles
+- [x] Ghost AI: Implement fixed target tiles for Scatter mode
 - [ ] Ghost AI: Implement "Cruise Elroy" speed increases for Blinky
 - [ ] Gameplay: Implement Fruit spawning (70/170 dots) and scoring
 - [ ] Gameplay: Implement correct ghost eating score multiplier (200, 400, 800, 1600)

@@ -1,4 +1,4 @@
-import { Direction, Ghost, GhostName, GridPos, PacmanState, PxPos } from "./types";
+import { Direction, Ghost, GhostMode, GhostName, GridPos, PacmanState, PxPos } from "./types";
 import {
 	CELL_SIZE,
 	GHOST_ANIMATION_FRAME_LENGTH,
@@ -25,6 +25,9 @@ import {
 	TUNNEL_X_MIN,
 	TUNNEL_X_MAX,
 	COLLISION_DISTANCE,
+	GHOST_MODE_PATTERN_L1,
+	GHOST_MODE_PATTERN_L2_L4,
+	GHOST_MODE_PATTERN_L5_PLUS,
 } from "./consts";
 import { ctx, SCREEN_HEIGHT, SCREEN_WIDTH } from "./canvas";
 import { drawBoard } from "./board";
@@ -70,6 +73,9 @@ interface GameState {
 	isCollision: boolean;
 	lastTimestamp: number | null;
 	frightenedModeExpiresAt: number | null;
+	ghostMode: GhostMode;
+	ghostModeIndex: number;
+	ghostModeTimer: number;
 }
 
 interface AnimationState {
@@ -90,6 +96,9 @@ const gameState: GameState = {
 	isCollision: false,
 	lastTimestamp: null,
 	frightenedModeExpiresAt: null,
+	ghostMode: GhostMode.Scatter,
+	ghostModeIndex: 0,
+	ghostModeTimer: 0,
 };
 
 const pacman: PacmanState = {
@@ -121,6 +130,9 @@ function resetLife() {
 	gameState.dotsEaten = 0;
 	gameState.isCollision = false;
 	gameState.frightenedModeExpiresAt = null;
+	gameState.ghostMode = GhostMode.Scatter;
+	gameState.ghostModeIndex = 0;
+	gameState.ghostModeTimer = 0;
 
 	pacman.pos = gridToPx(PACMAN_START_POS);
 	pacman.pos.x += 3;
@@ -277,7 +289,7 @@ function updateGhostNormal(ghost: Ghost, timestamp: number) {
 		if (isIntersection) {
 			const blinky = ghosts.find((g) => g.name === GhostName.Blinky);
 			const blinkyPos = blinky ? blinky.pos : ghost.pos;
-			const target = getGhostTarget(ghost, pacman, blinkyPos);
+			const target = getGhostTarget(ghost, pacman, blinkyPos, gameState.ghostMode);
 			ghost.direction = getBestDirection(ghost, target, allowedDirections);
 			ghost.lastChangedDirection = timestamp;
 			if (isHorizontalDir(ghost.direction)) {
@@ -285,6 +297,36 @@ function updateGhostNormal(ghost: Ghost, timestamp: number) {
 			} else {
 				ghost.pos.x = Math.round(ghost.pos.x);
 			}
+		}
+	}
+}
+
+function updateGhostMode(deltaT: number) {
+	if (gameState.frightenedModeExpiresAt !== null) return;
+
+	let pattern: { mode: string; duration: number }[];
+	if (gameState.level === 1) pattern = GHOST_MODE_PATTERN_L1;
+	else if (gameState.level >= 2 && gameState.level <= 4)
+		pattern = GHOST_MODE_PATTERN_L2_L4;
+	else pattern = GHOST_MODE_PATTERN_L5_PLUS;
+
+	const currentStep = pattern[gameState.ghostModeIndex];
+	if (!currentStep) return;
+
+	gameState.ghostModeTimer += deltaT;
+
+	if (gameState.ghostModeTimer >= currentStep.duration) {
+		gameState.ghostModeIndex++;
+		const nextStep = pattern[gameState.ghostModeIndex];
+		if (nextStep) {
+			gameState.ghostMode = nextStep.mode as GhostMode;
+			gameState.ghostModeTimer = 0;
+			// All ghosts reverse direction when mode changes
+			ghosts.forEach((ghost) => {
+				if (!ghost.inPen && !ghost.isEyes) {
+					ghost.direction = getOppositeDir(ghost.direction);
+				}
+			});
 		}
 	}
 }
@@ -514,6 +556,8 @@ function tick(timestamp: number) {
 	if (gameState.lastTimestamp === null) gameState.lastTimestamp = timestamp;
 	const deltaT = timestamp - gameState.lastTimestamp;
 	gameState.lastTimestamp = timestamp;
+
+	updateGhostMode(deltaT);
 
 	gameState.isCollision = isThereCollision(ghosts, pacman.pos);
 

@@ -102,6 +102,46 @@ export const GHOST_NO_UP_TILES = [
   { x: 17, y: 23 },
 ];
 
+export const GHOST_MODE_PATTERN_L1 = [
+  { mode: 'scatter', duration: 7000 },
+  { mode: 'chase', duration: 20000 },
+  { mode: 'scatter', duration: 7000 },
+  { mode: 'chase', duration: 20000 },
+  { mode: 'scatter', duration: 5000 },
+  { mode: 'chase', duration: 20000 },
+  { mode: 'scatter', duration: 5000 },
+  { mode: 'chase', duration: Infinity },
+];
+
+export const GHOST_MODE_PATTERN_L2_L4 = [
+  { mode: 'scatter', duration: 7000 },
+  { mode: 'chase', duration: 20000 },
+  { mode: 'scatter', duration: 7000 },
+  { mode: 'chase', duration: 20000 },
+  { mode: 'scatter', duration: 5000 },
+  { mode: 'chase', duration: 1033000 },
+  { mode: 'scatter', duration: 1000 / 60 },
+  { mode: 'chase', duration: Infinity },
+];
+
+export const GHOST_MODE_PATTERN_L5_PLUS = [
+  { mode: 'scatter', duration: 5000 },
+  { mode: 'chase', duration: 20000 },
+  { mode: 'scatter', duration: 5000 },
+  { mode: 'chase', duration: 20000 },
+  { mode: 'scatter', duration: 5000 },
+  { mode: 'chase', duration: 1037000 },
+  { mode: 'scatter', duration: 1000 / 60 },
+  { mode: 'chase', duration: Infinity },
+];
+
+export const SCATTER_TARGETS = {
+  Blinky: { x: 27, y: 0 },
+  Pinky: { x: 2, y: 0 },
+  Inky: { x: 27, y: 31 },
+  Clyde: { x: 2, y: 31 },
+};
+
 const GHOST_PEN_SPEED = 30;
 export const GHOST_STARTS = [
   {
