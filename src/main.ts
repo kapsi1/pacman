@@ -1,7 +1,6 @@
 import { Direction, Ghost, GhostName, GridPos, PxPos } from "./types";
 import {
 	CELL_SIZE,
-	DEBUG_GRID,
 	GHOST_ANIMATION_FRAME_LENGTH,
 	GHOST_STARTS,
 	NEW_LIFE_EVERY_POINTS,
@@ -22,6 +21,10 @@ import {
 	EAT_ENERGIZER_PAUSE_MS,
 	FRIGHTENED_DURATION_MS,
 	GHOST_PEN_CENTER_Y,
+	TUNNEL_Y,
+	TUNNEL_X_MIN,
+	TUNNEL_X_MAX,
+	COLLISION_DISTANCE,
 } from "./consts";
 import { ctx, SCREEN_HEIGHT, SCREEN_WIDTH } from "./canvas";
 import { drawBoard } from "./board";
@@ -54,52 +57,91 @@ import {
 	getBestDirection,
 } from "./utils";
 
-const debugEl = document.querySelector("#debug") as HTMLDivElement;
-// Max distance from cell center in pixels,
-// for a point to be counted as being in the center
 const epsilon = 0.5;
-let pacmanPos: PxPos,
-	pacmanDir: Direction,
-	newDirection: Direction | null,
-	isPaused: boolean,
-	isGameOver: boolean,
-	lastTimestamp: number | null,
-	pacmanFrame: 0 | 1 | 2,
-	ghostFrame: 0 | 1,
-	deathAnimationFrame: number,
-	lastPacmanFrameTimestamp: number,
-	lastGhostFrameTimestamp: number,
-	lastDeathFrameTimestamp: number,
-	score: number,
-	isCornering: boolean,
-	lives: number,
-	lastLifeScore: number,
-	ghosts: Ghost[],
-	level: number,
-	dotsEaten: number,
-	isCollision: boolean,
-	pacmanSpeed: number,
-	pacmanPauseTimeRemaining: number,
+
+interface GameState {
+	isPaused: boolean;
+	isGameOver: boolean;
+	score: number;
+	lives: number;
+	level: number;
+	dotsEaten: number;
+	lastLifeScore: number;
+	isCollision: boolean;
+	lastTimestamp: number | null;
 	frightenedModeExpiresAt: number | null;
+}
+
+interface PacmanState {
+	pos: PxPos;
+	dir: Direction;
+	nextDir: Direction | null;
+	speed: number;
+	pauseTimeRemaining: number;
+	isCornering: boolean;
+	frame: 0 | 1 | 2;
+	lastFrameTimestamp: number;
+}
+
+interface AnimationState {
+	ghostFrame: 0 | 1;
+	deathAnimationFrame: number;
+	lastGhostFrameTimestamp: number;
+	lastDeathFrameTimestamp: number;
+}
+
+const gameState: GameState = {
+	isPaused: false,
+	isGameOver: false,
+	score: 0,
+	lives: INITIAL_LIVES,
+	level: 1,
+	dotsEaten: 0,
+	lastLifeScore: 0,
+	isCollision: false,
+	lastTimestamp: null,
+	frightenedModeExpiresAt: null,
+};
+
+const pacman: PacmanState = {
+	pos: gridToPx(PACMAN_START_POS),
+	dir: PACMAN_START_DIR,
+	nextDir: null,
+	speed: getPacmanSpeed(1),
+	pauseTimeRemaining: 0,
+	isCornering: false,
+	frame: 0,
+	lastFrameTimestamp: 0,
+};
+
+const anim: AnimationState = {
+	ghostFrame: 0,
+	deathAnimationFrame: 0,
+	lastGhostFrameTimestamp: 0,
+	lastDeathFrameTimestamp: 0,
+};
+
+let ghosts: Ghost[] = [];
 
 function resetLife() {
-	isPaused = true;
-	pacmanFrame = 0;
-	ghostFrame = 0;
-	deathAnimationFrame = 0;
-	lastPacmanFrameTimestamp = 0;
-	lastGhostFrameTimestamp = 0;
-	lastDeathFrameTimestamp = 0;
-	lastTimestamp = null;
-	pacmanPos = gridToPx(PACMAN_START_POS);
-	pacmanPos.x = pacmanPos.x + 3;
-	pacmanDir = PACMAN_START_DIR;
-	newDirection = null;
-	isCornering = false;
-	dotsEaten = 0;
-	isCollision = false;
-	pacmanPauseTimeRemaining = 0;
-	frightenedModeExpiresAt = null;
+	gameState.isPaused = true;
+	anim.deathAnimationFrame = 0;
+	anim.lastGhostFrameTimestamp = 0;
+	anim.lastDeathFrameTimestamp = 0;
+	gameState.lastTimestamp = null;
+	gameState.dotsEaten = 0;
+	gameState.isCollision = false;
+	gameState.frightenedModeExpiresAt = null;
+
+	pacman.pos = gridToPx(PACMAN_START_POS);
+	pacman.pos.x += 3;
+	pacman.dir = PACMAN_START_DIR;
+	pacman.nextDir = null;
+	pacman.isCornering = false;
+	pacman.pauseTimeRemaining = 0;
+	pacman.frame = 0;
+	pacman.lastFrameTimestamp = 0;
+
 	ghosts = JSON.parse(JSON.stringify(GHOST_STARTS));
 	ghosts.forEach((ghost) => {
 		ghost.lastChangedDirection = 0;
@@ -117,23 +159,25 @@ function resetLife() {
 				break;
 		}
 	});
+
 	showReadyText();
 	drawEverything(0);
 	setTimeout(() => {
 		hideReadyText();
-		isPaused = false;
+		gameState.isPaused = false;
 		requestAnimationFrame(tick);
 	}, STARTING_PAUSE);
 }
 
 function resetGameState() {
-	isGameOver = false;
-	score = 0;
-	lives = INITIAL_LIVES;
-	lastLifeScore = 0;
-	level = 1;
-	pacmanSpeed = getPacmanSpeed(level);
+	gameState.isGameOver = false;
+	gameState.score = 0;
+	gameState.lives = INITIAL_LIVES;
+	gameState.lastLifeScore = 0;
+	gameState.level = 1;
+	pacman.speed = getPacmanSpeed(gameState.level);
 	resetLife();
+
 	ghosts.forEach((ghost) => {
 		ghost.frightened = false;
 		ghost.isEyes = false;
@@ -143,16 +187,14 @@ function resetGameState() {
 				ghost.canLeave = true;
 				break;
 			case GhostName.Inky:
-				if (level === 1) ghost.dotLimit = 30;
+				if (gameState.level === 1) ghost.dotLimit = 30;
 				break;
 			case GhostName.Clyde:
-				if (level === 1) ghost.dotLimit = 90;
-				else if (level === 2) ghost.dotLimit = 50;
+				if (gameState.level === 1) ghost.dotLimit = 90;
+				else if (gameState.level === 2) ghost.dotLimit = 50;
 				break;
 		}
 	});
-	pacmanPauseTimeRemaining = 0;
-	frightenedModeExpiresAt = null;
 	updateScore("00");
 	hideGameOver();
 }
@@ -164,181 +206,191 @@ function getOppositeDir(dir: Direction): Direction {
 	return Direction.Right;
 }
 
+function updateGhostInPen(ghost: Ghost) {
+	if (ghost.dotLimit && gameState.dotsEaten >= ghost.dotLimit) {
+		ghost.canLeave = true;
+		if (ghost.pos.x > GHOST_PEN_CENTER_X) ghost.direction = Direction.Left;
+		else if (ghost.pos.x < GHOST_PEN_CENTER_X)
+			ghost.direction = Direction.Right;
+		else ghost.direction = Direction.Up;
+		delete ghost.dotLimit;
+	}
+
+	if (ghost.canLeave) {
+		// When ghost inside pen reaches middle point, go up
+		if (Math.abs(ghost.pos.x - GHOST_PEN_CENTER_X) <= epsilon) {
+			ghost.direction = Direction.Up;
+			ghost.pos.x = GHOST_PEN_CENTER_X;
+		}
+		// When it reaches the cell above exit, it goes left and is no longer in the pen
+		if (Math.abs(ghost.pos.y - GHOST_PEN_EXIT_Y) <= epsilon) {
+			ghost.inPen = false;
+			ghost.pos.y = GHOST_PEN_EXIT_Y;
+			ghost.direction = Direction.Left;
+			ghost.speed = getGhostSpeed(gameState.level);
+		}
+	} else {
+		// If it can't leave, bounce between walls
+		if (ghost.pos.y < GHOST_PEN_TOP_WALL_Y) {
+			ghost.direction = Direction.Down;
+		} else if (ghost.pos.y > GHOST_PEN_BOTTOM_WALL_Y) {
+			ghost.direction = Direction.Up;
+		}
+	}
+}
+
+function updateGhostEyes(ghost: Ghost, timestamp: number) {
+	const penExit: PxPos = { x: GHOST_PEN_CENTER_X, y: GHOST_PEN_EXIT_Y };
+	const distToExit = pointDistance(ghost.pos, penExit);
+
+	if (distToExit <= epsilon) {
+		ghost.isEyes = false;
+		ghost.inPen = true;
+		ghost.canLeave = true;
+		ghost.direction = Direction.Up;
+		ghost.pos = { x: GHOST_PEN_CENTER_X, y: GHOST_PEN_CENTER_Y };
+		ghost.speed = getGhostSpeed(gameState.level);
+		return;
+	}
+
+	const ghostGridPos: GridPos = pxToGrid(ghost.pos);
+	const cellCenter: PxPos = gridToPx(ghostGridPos);
+	const distanceToCellCenter = pointDistance(ghost.pos, cellCenter);
+
+	if (distanceToCellCenter <= epsilon) {
+		const { isIntersection, allowedDirections } = getAllowedDirections(ghost);
+		if (isIntersection) {
+			ghost.direction = getBestDirection(ghost, penExit, allowedDirections);
+			ghost.lastChangedDirection = timestamp;
+			if (isHorizontalDir(ghost.direction)) {
+				ghost.pos.y = Math.round(ghost.pos.y);
+			} else {
+				ghost.pos.x = Math.round(ghost.pos.x);
+			}
+		}
+	}
+}
+
+function updateGhostNormal(ghost: Ghost, timestamp: number) {
+	const ghostGridPos: GridPos = pxToGrid(ghost.pos);
+	const teleportedPos = teleportCharacter(ghost.direction, ghostGridPos);
+
+	if (teleportedPos !== null) {
+		ghost.pos = teleportedPos.pos;
+		return;
+	}
+
+	const cellCenter: PxPos = gridToPx(ghostGridPos);
+	const distanceToCellCenter = pointDistance(ghost.pos, cellCenter);
+
+	if (distanceToCellCenter <= epsilon) {
+		const { isIntersection, allowedDirections } = getAllowedDirections(ghost);
+		if (isIntersection) {
+			const randomDir = allowedDirections[randomInt(0, allowedDirections.length - 1)];
+			ghost.direction = randomDir;
+			ghost.lastChangedDirection = timestamp;
+			if (isHorizontalDir(ghost.direction)) {
+				ghost.pos.y = Math.round(ghost.pos.y);
+			} else {
+				ghost.pos.x = Math.round(ghost.pos.x);
+			}
+		}
+	}
+}
+
 function moveGhosts(deltaT: number, timestamp: number) {
 	for (let i = 0; i < ghosts.length; i++) {
 		const ghost = ghosts[i];
 		if (ghost.lastChangedDirection === 0)
 			ghost.lastChangedDirection = timestamp;
+
 		const deltaPx = (ghost.speed * deltaT) / 1000;
 		//Prevent changing directions multiple times on intersections
 		const minDeltaT = (1 / ghost.speed) * 1000 * 4;
 
 		if (ghost.inPen) {
-			if (ghost.dotLimit && dotsEaten >= ghost.dotLimit) {
-				ghost.canLeave = true;
-				if (ghost.pos.x > GHOST_PEN_CENTER_X) ghost.direction = Direction.Left;
-				else if (ghost.pos.x < GHOST_PEN_CENTER_X)
-					ghost.direction = Direction.Right;
-				else ghost.direction = Direction.Up;
-				delete ghost.dotLimit;
-			}
-			if (ghost.canLeave) {
-				// When ghost inside pen reaches middle point, go up
-				if (Math.abs(ghost.pos.x - GHOST_PEN_CENTER_X) <= epsilon) {
-					ghost.direction = Direction.Up;
-					ghost.pos.x = GHOST_PEN_CENTER_X;
-				}
-				// When it reaches the cell above exit, it goes left and is no longer in the pen
-				if (Math.abs(ghost.pos.y - GHOST_PEN_EXIT_Y) <= epsilon) {
-					ghost.inPen = false;
-					ghost.pos.y = GHOST_PEN_EXIT_Y;
-					ghost.direction = Direction.Left;
-					ghost.speed = getGhostSpeed(level);
-				}
-			} else {
-				// If it can't leave, bounce between walls
-				if (ghost.pos.y < GHOST_PEN_TOP_WALL_Y) {
-					ghost.direction = Direction.Down;
-				} else if (ghost.pos.y > GHOST_PEN_BOTTOM_WALL_Y) {
-					ghost.direction = Direction.Up;
-				}
-			}
+			updateGhostInPen(ghost);
 		} else if (ghost.isEyes) {
-			const penExit: PxPos = { x: GHOST_PEN_CENTER_X, y: GHOST_PEN_EXIT_Y };
-			const distToExit = pointDistance(ghost.pos, penExit);
-			if (distToExit <= epsilon) {
-				ghost.isEyes = false;
-				ghost.inPen = true;
-				ghost.pos = { x: GHOST_PEN_CENTER_X, y: GHOST_PEN_CENTER_Y };
-				ghost.speed = getGhostSpeed(level);
-			} else {
-				const ghostGridPos: GridPos = pxToGrid(ghost.pos);
-				const cellCenter: PxPos = gridToPx(ghostGridPos);
-				const distanceToCellCenter = pointDistance(ghost.pos, cellCenter);
-				if (distanceToCellCenter <= epsilon) {
-					const { isIntersection, allowedDirections } = getAllowedDirections(ghost);
-					if (isIntersection) {
-						ghost.direction = getBestDirection(ghost, penExit, allowedDirections);
-						ghost.lastChangedDirection = timestamp;
-						if (isHorizontalDir(ghost.direction)) {
-							ghost.pos.y = Math.round(ghost.pos.y);
-						} else {
-							ghost.pos.x = Math.round(ghost.pos.x);
-						}
-					}
-				}
-			}
+			updateGhostEyes(ghost, timestamp);
 		} else if (timestamp - ghost.lastChangedDirection > minDeltaT) {
-			const ghostGridPos: GridPos = pxToGrid(ghost.pos);
-			const teleportedPos = teleportCharacter(ghost.direction, ghostGridPos);
-			if (teleportedPos !== null) {
-				ghost.pos = teleportedPos.pos;
-			} else {
-				const cellCenter: PxPos = gridToPx(ghostGridPos);
-				const distanceToCellCenter = pointDistance(ghost.pos, cellCenter);
-				if (distanceToCellCenter <= epsilon) {
-					const { isIntersection, allowedDirections } =
-						getAllowedDirections(ghost);
-					if (isIntersection) {
-						const randomDir =
-							allowedDirections[randomInt(0, allowedDirections.length - 1)];
-						ghost.direction = randomDir;
-						ghost.lastChangedDirection = timestamp;
-						if (isHorizontalDir(ghost.direction)) {
-							ghost.pos.y = Math.round(ghost.pos.y);
-						} else {
-							ghost.pos.x = Math.round(ghost.pos.x);
-						}
-					}
-				}
-			}
+			updateGhostNormal(ghost, timestamp);
 		}
+
 		ghost.pos = offsetPos(ghost.pos, deltaPx, ghost.direction);
 
 		// Change speed in tunnel
-		if (!ghost.inPen && ghost.pos.y === 140) {
-			if (ghost.pos.x < 60 || ghost.pos.x > 196)
-				ghost.speed = getGhostSpeed(level, false, true);
-			else ghost.speed = getGhostSpeed(level, false, false);
+		if (!ghost.inPen && ghost.pos.y === TUNNEL_Y) {
+			if (ghost.pos.x < TUNNEL_X_MIN || ghost.pos.x > TUNNEL_X_MAX) {
+				ghost.speed = getGhostSpeed(gameState.level, false, true);
+			} else {
+				ghost.speed = getGhostSpeed(gameState.level, false, false);
+			}
 		}
 	}
 
 	// Handle frightened mode expiration
-	if (frightenedModeExpiresAt !== null && timestamp > frightenedModeExpiresAt) {
-		frightenedModeExpiresAt = null;
+	if (gameState.frightenedModeExpiresAt !== null && timestamp > gameState.frightenedModeExpiresAt) {
+		gameState.frightenedModeExpiresAt = null;
 		ghosts.forEach((ghost) => {
 			if (ghost.isEyes) return;
 			ghost.frightened = false;
 			ghost.speed = getGhostSpeed(
-				level,
+				gameState.level,
 				false,
-				ghost.pos.y === 140 && (ghost.pos.x < 60 || ghost.pos.x > 196),
+				ghost.pos.y === TUNNEL_Y && (ghost.pos.x < TUNNEL_X_MIN || ghost.pos.x > TUNNEL_X_MAX),
 			);
 		});
 	}
 }
 
 function movePacman(deltaPx: number) {
-	let newPos = { x: pacmanPos.x, y: pacmanPos.y };
-	newPos = offsetPos(newPos, deltaPx, pacmanDir);
-	const currentCell = pxToGrid(pacmanPos);
+	let newPos = { x: pacman.pos.x, y: pacman.pos.y };
+	newPos = offsetPos(newPos, deltaPx, pacman.dir);
+	const currentCell = pxToGrid(pacman.pos);
 
 	// During cornering Pacman moves diagonally until he reaches
 	// the centerline of the new direction's path
-	if (isCornering) {
+	if (pacman.isCornering) {
 		const cellCenter = gridToPx(currentCell);
-		const xOffset = pacmanPos.x - cellCenter.x;
-		const yOffset = pacmanPos.y - cellCenter.y;
+		const xOffset = pacman.pos.x - cellCenter.x;
+		const yOffset = pacman.pos.y - cellCenter.y;
 
-		if (!isHorizontalDir(pacmanDir)) {
+		if (!isHorizontalDir(pacman.dir)) {
 			if (xOffset < -epsilon) newPos.x += deltaPx;
 			if (xOffset > epsilon) newPos.x -= deltaPx;
-			if (xOffset >= -epsilon && xOffset <= epsilon) {
+			if (Math.abs(xOffset) <= epsilon) {
 				newPos.x = Math.round(newPos.x);
-				isCornering = false;
+				pacman.isCornering = false;
 			}
 		} else {
 			if (yOffset < -epsilon) newPos.y += deltaPx;
 			if (yOffset > epsilon) newPos.y -= deltaPx;
-			if (yOffset >= -epsilon && yOffset <= epsilon) {
+			if (Math.abs(yOffset) <= epsilon) {
 				newPos.y = Math.round(newPos.y);
-				isCornering = false;
+				pacman.isCornering = false;
 			}
 		}
 	}
 
-	if (newDirection) {
-		const nextCell = getNextCell(currentCell, newDirection);
-		const isAllowed = isCellAllowed(nextCell);
-
-		if (isAllowed) {
-			if (
-				(isHorizontalDir(pacmanDir) && !isHorizontalDir(newDirection)) ||
-				(!isHorizontalDir(pacmanDir) && isHorizontalDir(newDirection))
-			) {
-				isCornering = true;
+	if (pacman.nextDir) {
+		const nextCell = getNextCell(currentCell, pacman.nextDir);
+		if (isCellAllowed(nextCell)) {
+			if (isHorizontalDir(pacman.dir) !== isHorizontalDir(pacman.nextDir)) {
+				pacman.isCornering = true;
 			}
-			pacmanDir = newDirection;
-			newDirection = null;
+			pacman.dir = pacman.nextDir;
+			pacman.nextDir = null;
 		}
 	}
 
-	// newCell - cell after moving delta pixels
-	// nextCell - cell neighbouring newCell in the current direction
 	let newCell = pxToGrid(newPos);
-
-	const teleported = teleportCharacter(pacmanDir, newCell);
+	const teleported = teleportCharacter(pacman.dir, newCell);
 	if (teleported !== null) {
 		newPos = teleported.pos;
 		newCell = teleported.cell;
 	}
-	const nextCell = getNextCell(newCell, pacmanDir);
 
-	if (DEBUG_GRID) {
-		(window as any).currentCell = pxToGrid(pacmanPos);
-		(window as any).nextCell = nextCell;
-	}
-
+	const nextCell = getNextCell(newCell, pacman.dir);
 	let isAllowed = true;
 	const isNextCellAllowed = isCellAllowed(nextCell);
 	const distanceToNextCell = pointDistance(newPos, gridToPx(nextCell));
@@ -347,143 +399,158 @@ function movePacman(deltaPx: number) {
 	}
 
 	if (isAllowed) {
-		pacmanPos.x = newPos.x;
-		pacmanPos.y = newPos.y;
-
-		let scoreChanged = false;
-		if (board[newCell.y] && board[newCell.y][newCell.x] === ".") {
-			score += 10;
-			scoreChanged = true;
-			dotsEaten++;
-			pacmanPauseTimeRemaining += EAT_DOT_PAUSE_MS;
-		} else if (board[newCell.y] && board[newCell.y][newCell.x] === "o") {
-			score += 50;
-			scoreChanged = true;
-			pacmanPauseTimeRemaining += EAT_ENERGIZER_PAUSE_MS;
-			frightenedModeExpiresAt = performance.now() + FRIGHTENED_DURATION_MS;
-			ghosts.forEach((ghost) => {
-				ghost.frightened = true;
-				ghost.direction = getOppositeDir(ghost.direction);
-				ghost.speed = getGhostSpeed(level, true, false);
-			});
-		}
-
-		if (scoreChanged) {
-			updateScore(score.toString());
-			const row = board[newCell.y];
-			board[newCell.y] =
-				row.substring(0, newCell.x) + " " + row.substring(newCell.x + 1);
-			if (
-				Math.floor(score / NEW_LIFE_EVERY_POINTS) >
-				Math.floor(lastLifeScore / NEW_LIFE_EVERY_POINTS)
-			) {
-				lives += 1;
-				lastLifeScore = score;
-			}
-		}
+		pacman.pos = newPos;
+		handlePacmanCollisions(newCell);
 	} else {
-		if (isHorizontalDir(pacmanDir)) {
-			pacmanPos.x = Math.round(pacmanPos.x);
+		if (isHorizontalDir(pacman.dir)) {
+			pacman.pos.x = Math.round(pacman.pos.x);
 		} else {
-			pacmanPos.y = Math.round(pacmanPos.y);
+			pacman.pos.y = Math.round(pacman.pos.y);
 		}
 	}
 	return isAllowed;
 }
 
+function handlePacmanCollisions(cell: GridPos) {
+	let scoreChanged = false;
+	const cellContent = board[cell.y]?.[cell.x];
+
+	if (cellContent === ".") {
+		gameState.score += 10;
+		scoreChanged = true;
+		gameState.dotsEaten++;
+		pacman.pauseTimeRemaining += EAT_DOT_PAUSE_MS;
+	} else if (cellContent === "o") {
+		gameState.score += 50;
+		scoreChanged = true;
+		pacman.pauseTimeRemaining += EAT_ENERGIZER_PAUSE_MS;
+		gameState.frightenedModeExpiresAt = performance.now() + FRIGHTENED_DURATION_MS;
+		ghosts.forEach((ghost) => {
+			ghost.frightened = true;
+			ghost.direction = getOppositeDir(ghost.direction);
+			ghost.speed = getGhostSpeed(gameState.level, true, false);
+		});
+	}
+
+	if (scoreChanged) {
+		updateScore(gameState.score.toString());
+		const row = board[cell.y];
+		board[cell.y] = row.substring(0, cell.x) + " " + row.substring(cell.x + 1);
+
+		if (Math.floor(gameState.score / NEW_LIFE_EVERY_POINTS) > Math.floor(gameState.lastLifeScore / NEW_LIFE_EVERY_POINTS)) {
+			gameState.lives++;
+			gameState.lastLifeScore = gameState.score;
+		}
+	}
+}
+
 document.addEventListener("keydown", (event) => {
-	if (isGameOver) {
+	if (gameState.isGameOver) {
 		if (event.key === " ") resetGameState();
 		return;
 	}
 	switch (event.key) {
 		case "`":
 		case " ":
-			isPaused = !isPaused;
-			if (!isPaused) {
-				lastTimestamp = null;
+			gameState.isPaused = !gameState.isPaused;
+			if (!gameState.isPaused) {
+				gameState.lastTimestamp = null;
 				requestAnimationFrame(tick);
 			}
 			break;
 		case "w":
 		case "ArrowUp":
-			if (pacmanDir === Direction.Up) return;
-			newDirection = Direction.Up;
+			if (pacman.dir === Direction.Up) return;
+			pacman.nextDir = Direction.Up;
 			break;
 		case "s":
 		case "ArrowDown":
-			if (pacmanDir === Direction.Down) return;
-			newDirection = Direction.Down;
+			if (pacman.dir === Direction.Down) return;
+			pacman.nextDir = Direction.Down;
 			break;
 		case "d":
 		case "ArrowRight":
-			if (pacmanDir === Direction.Right) return;
-			newDirection = Direction.Right;
+			if (pacman.dir === Direction.Right) return;
+			pacman.nextDir = Direction.Right;
 			break;
 		case "a":
 		case "ArrowLeft":
-			if (pacmanDir === Direction.Left) return;
-			newDirection = Direction.Left;
+			if (pacman.dir === Direction.Left) return;
+			pacman.nextDir = Direction.Left;
 			break;
 	}
 });
 
-function tick(timestamp: number) {
-	if (isPaused) return;
-	if (lastTimestamp === null) lastTimestamp = timestamp;
-	const deltaT = timestamp - lastTimestamp;
-	lastTimestamp = timestamp;
+function handleGhostEating() {
+	const collidedGhost = ghosts.find(
+		(g) => !g.isEyes && pointDistance(g.pos, pacman.pos) <= COLLISION_DISTANCE,
+	);
+	if (collidedGhost?.frightened) {
+		gameState.score += 200;
+		updateScore(gameState.score.toString());
+		collidedGhost.frightened = false;
+		collidedGhost.isEyes = true;
+		collidedGhost.speed = getGhostSpeed(gameState.level, false, false, true);
+		return true;
+	}
+	return false;
+}
 
-	isCollision = isThereCollision(ghosts, pacmanPos);
-	if (isCollision) {
-		const collidedGhost = ghosts.find(
-			(g) => !g.isEyes && pointDistance(g.pos, pacmanPos) <= 1,
-		);
-		if (collidedGhost?.frightened) {
-			// Eat Ghost
-			score += 200; // Simplified scoring
-			updateScore(score.toString());
-			collidedGhost.frightened = false;
-			collidedGhost.isEyes = true;
-			collidedGhost.speed = getGhostSpeed(level, false, false, true);
-		} else if (collidedGhost && !collidedGhost.isEyes) {
-			if (timestamp - lastDeathFrameTimestamp > PACMAN_DEATH_FRAME_LENGTH) {
-				lastDeathFrameTimestamp = timestamp;
-				deathAnimationFrame++;
-				if (deathAnimationFrame > DEATH_ANIMATION_TOTAL_FRAMES) {
-					lives--;
-					if (lives > 0) {
-						resetLife();
-					} else {
-						isPaused = true;
-						isGameOver = true;
-						showGameOver();
-					}
-				}
+function handleDeathAnimation(timestamp: number) {
+	const collidedGhost = ghosts.find(
+		(g) => !g.isEyes && pointDistance(g.pos, pacman.pos) <= COLLISION_DISTANCE,
+	);
+	if (!collidedGhost || collidedGhost.isEyes) return;
+
+	if (timestamp - anim.lastDeathFrameTimestamp > PACMAN_DEATH_FRAME_LENGTH) {
+		anim.lastDeathFrameTimestamp = timestamp;
+		anim.deathAnimationFrame++;
+		if (anim.deathAnimationFrame > DEATH_ANIMATION_TOTAL_FRAMES) {
+			gameState.lives--;
+			if (gameState.lives > 0) {
+				resetLife();
+			} else {
+				gameState.isPaused = true;
+				gameState.isGameOver = true;
+				showGameOver();
 			}
+		}
+	}
+}
+
+function tick(timestamp: number) {
+	if (gameState.isPaused) return;
+	if (gameState.lastTimestamp === null) gameState.lastTimestamp = timestamp;
+	const deltaT = timestamp - gameState.lastTimestamp;
+	gameState.lastTimestamp = timestamp;
+
+	gameState.isCollision = isThereCollision(ghosts, pacman.pos);
+
+	if (gameState.isCollision) {
+		if (!handleGhostEating()) {
+			handleDeathAnimation(timestamp);
 		}
 	} else {
 		let effectiveDeltaT = deltaT;
-		if (pacmanPauseTimeRemaining > 0) {
-			effectiveDeltaT = Math.max(0, deltaT - pacmanPauseTimeRemaining);
-			pacmanPauseTimeRemaining -= deltaT;
+		if (pacman.pauseTimeRemaining > 0) {
+			effectiveDeltaT = Math.max(0, deltaT - pacman.pauseTimeRemaining);
+			pacman.pauseTimeRemaining -= deltaT;
 		}
-		const deltaPx = (pacmanSpeed * effectiveDeltaT) / 1000;
+
+		const deltaPx = (pacman.speed * effectiveDeltaT) / 1000;
 		const pacmanMoved = movePacman(deltaPx);
-		if (
-			pacmanMoved &&
-			timestamp - lastPacmanFrameTimestamp > PACMAN_ANIMATION_FRAME_LENGTH
-		) {
-			lastPacmanFrameTimestamp = timestamp;
-			pacmanFrame++;
-			if (pacmanFrame > 2) pacmanFrame = 0;
+
+		if (pacmanMoved && timestamp - pacman.lastFrameTimestamp > PACMAN_ANIMATION_FRAME_LENGTH) {
+			pacman.lastFrameTimestamp = timestamp;
+			pacman.frame++;
+			if (pacman.frame > 2) pacman.frame = 0;
 		}
 
 		moveGhosts(deltaT, timestamp);
-		if (timestamp - lastGhostFrameTimestamp > GHOST_ANIMATION_FRAME_LENGTH) {
-			lastGhostFrameTimestamp = timestamp;
-			ghostFrame++;
-			if (ghostFrame > 1) ghostFrame = 0;
+		if (timestamp - anim.lastGhostFrameTimestamp > GHOST_ANIMATION_FRAME_LENGTH) {
+			anim.lastGhostFrameTimestamp = timestamp;
+			anim.ghostFrame++;
+			if (anim.ghostFrame > 1) anim.ghostFrame = 0;
 		}
 	}
 
@@ -494,20 +561,18 @@ function tick(timestamp: number) {
 function drawEverything(timestamp: number) {
 	ctx.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 	drawBoard();
-	drawLives(lives - 1);
-	// After a collision, show ghosts for DEATH_ANIMATION_START_PAUSE_FRAMES,
-	// then hide them for the rest of death animation
-	if (
-		isCollision &&
-		deathAnimationFrame >= DEATH_ANIMATION_START_PAUSE_FRAMES
-	) {
-		drawDeathAnimation(pacmanPos, deathAnimationFrame);
+	drawLives(gameState.lives - 1);
+
+	const showDeath = gameState.isCollision && anim.deathAnimationFrame >= DEATH_ANIMATION_START_PAUSE_FRAMES;
+
+	if (showDeath) {
+		drawDeathAnimation(pacman.pos, anim.deathAnimationFrame);
 	} else {
-		drawPacman(pacmanPos, pacmanDir, pacmanFrame);
-		drawGhosts(ghosts, ghostFrame, frightenedModeExpiresAt, timestamp);
+		drawPacman(pacman.pos, pacman.dir, pacman.frame);
+		drawGhosts(ghosts, anim.ghostFrame, gameState.frightenedModeExpiresAt, timestamp);
 	}
+
 	ctx.fillStyle = "black";
-	// Left margin to hide characters going into the left tunnel
 	ctx.fillRect(0, 0, 16, SCREEN_HEIGHT);
 }
 

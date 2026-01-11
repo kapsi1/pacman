@@ -88,6 +88,13 @@ export const GHOST_PEN_CENTER_Y = 140;
 export const GHOST_PEN_EXIT_Y = 116;
 export const GHOST_PEN_TOP_WALL_Y = 135;
 export const GHOST_PEN_BOTTOM_WALL_Y = 145;
+
+export const TUNNEL_Y = 140;
+export const TUNNEL_X_MIN = 60;
+export const TUNNEL_X_MAX = 196;
+export const COLLISION_DISTANCE = 1;
+export const EYES_SPEED_MULTIPLIER = 2;
+
 const GHOST_PEN_SPEED = 30;
 export const GHOST_STARTS = [
   {
