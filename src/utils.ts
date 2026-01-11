@@ -1,5 +1,5 @@
 import { TOP_MARGIN } from './canvas';
-import { WALL_MARGIN, CELL_SIZE, board, FULL_SPEED } from './consts';
+import { WALL_MARGIN, CELL_SIZE, board, FULL_SPEED, GHOST_NO_UP_TILES } from './consts';
 import { Direction } from './types';
 import type { Ghost, GridPos, PxPos } from './types';
 
@@ -73,6 +73,18 @@ export function getAllowedDirections(ghost: Ghost) {
       allowedDirections.push(dir);
     }
   }
+
+  // Remove UP direction if on a forbidden tile and not frightened
+  if (!ghost.frightened) {
+    const isForbidden = GHOST_NO_UP_TILES.some((tile) => tile.x === cell.x && tile.y === cell.y);
+    if (isForbidden) {
+      const upIndex = allowedDirections.indexOf(Direction.Up);
+      if (upIndex !== -1) {
+        allowedDirections.splice(upIndex, 1);
+      }
+    }
+  }
+
   return { isIntersection, allowedDirections };
 }
 

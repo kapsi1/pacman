@@ -95,6 +95,13 @@ export const TUNNEL_X_MAX = 196;
 export const COLLISION_DISTANCE = 1;
 export const EYES_SPEED_MULTIPLIER = 2;
 
+export const GHOST_NO_UP_TILES = [
+  { x: 14, y: 11 },
+  { x: 17, y: 11 },
+  { x: 14, y: 23 },
+  { x: 17, y: 23 },
+];
+
 const GHOST_PEN_SPEED = 30;
 export const GHOST_STARTS = [
   {

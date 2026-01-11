@@ -1,4 +1,4 @@
-- [ ] Implement forbidden zones for ghosts
+- [x] Implement forbidden zones for ghosts
 - [ ] Ghost AI: Implement individual tracking logic (Blinky, Pinky, Inky, Clyde)
 - [ ] Ghost AI: Implement Scatter/Chase mode timer cycles
 - [ ] Ghost AI: Implement fixed target tiles for Scatter mode
