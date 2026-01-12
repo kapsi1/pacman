@@ -60,6 +60,7 @@ import {
 	getBestDirection,
 	getGhostTarget,
 } from "./utils";
+import { initSounds, playSound, stopSound, stopAllBackgroundSounds } from "./audio";
 
 const epsilon = 0.5;
 
@@ -78,6 +79,7 @@ interface GameState {
 	ghostModeIndex: number;
 	ghostModeTimer: number;
 	ghostsEatenThisEnergizer: number;
+	isWaitingForFirstStart: boolean;
 }
 
 interface AnimationState {
@@ -105,6 +107,7 @@ const gameState: GameState = {
 	ghostModeIndex: 0,
 	ghostModeTimer: 0,
 	ghostsEatenThisEnergizer: 0,
+	isWaitingForFirstStart: true,
 };
 
 const pacman: PacmanState = {
@@ -177,6 +180,8 @@ function resetLife() {
 
 	showReadyText();
 	drawEverything(0);
+	initSounds();
+	playSound('start');
 	setTimeout(() => {
 		hideReadyText();
 		gameState.isPaused = false;
@@ -191,7 +196,6 @@ function resetGameState() {
 	gameState.lastLifeScore = 0;
 	gameState.level = 1;
 	pacman.speed = getPacmanSpeed(gameState.level);
-	resetLife();
 
 	ghosts.forEach((ghost) => {
 		ghost.frightened = false;
@@ -212,6 +216,25 @@ function resetGameState() {
 	});
 	updateScore("00");
 	hideGameOver();
+	
+	if (gameState.isWaitingForFirstStart) {
+		showReadyText(); // Reuse READY text or add a separate one later
+		const readyEl = document.querySelector("#ready") as HTMLDivElement;
+		if (readyEl) readyEl.textContent = "CLICK TO START";
+		
+		const startHandler = () => {
+			document.removeEventListener("click", startHandler);
+			document.removeEventListener("keydown", startHandler);
+			gameState.isWaitingForFirstStart = false;
+			if (readyEl) readyEl.textContent = "READY!";
+			initSounds();
+			resetLife();
+		};
+		document.addEventListener("click", startHandler);
+		document.addEventListener("keydown", startHandler);
+	} else {
+		resetLife();
+	}
 }
 
 function getOppositeDir(dir: Direction): Direction {
@@ -467,11 +490,14 @@ function handlePacmanCollisions(cell: GridPos) {
 		scoreChanged = true;
 		gameState.dotsEaten++;
 		pacman.pauseTimeRemaining += EAT_DOT_PAUSE_MS;
+		if (gameState.dotsEaten % 2 === 0) playSound('dot1');
+		else playSound('dot2');
 	} else if (cellContent === "o") {
 		gameState.score += 50;
 		scoreChanged = true;
 		gameState.ghostsEatenThisEnergizer = 0;
 		pacman.pauseTimeRemaining += EAT_ENERGIZER_PAUSE_MS;
+		playSound('energizer');
 		gameState.frightenedModeExpiresAt = performance.now() + FRIGHTENED_DURATION_MS;
 		ghosts.forEach((ghost) => {
 			ghost.frightened = true;
@@ -543,6 +569,7 @@ function handleGhostEating() {
 		collidedGhost.isEyes = true;
 		collidedGhost.speed = getGhostSpeed(gameState.level, false, false, true);
 
+		playSound('eatGhost');
 		anim.ghostEatenPauseTimer = GHOST_EATEN_PAUSE_MS;
 		anim.ghostEatenScore = scoreGained;
 		anim.ghostEatenPos = { ...collidedGhost.pos };
@@ -559,6 +586,10 @@ function handleDeathAnimation(timestamp: number) {
 	if (!collidedGhost || collidedGhost.isEyes) return;
 
 	if (timestamp - anim.lastDeathFrameTimestamp > PACMAN_DEATH_FRAME_LENGTH) {
+		if (anim.deathAnimationFrame === 0) {
+			stopAllBackgroundSounds();
+			playSound('death');
+		}
 		anim.lastDeathFrameTimestamp = timestamp;
 		anim.deathAnimationFrame++;
 		if (anim.deathAnimationFrame > DEATH_ANIMATION_TOTAL_FRAMES) {
@@ -613,6 +644,25 @@ function tick(timestamp: number) {
 		}
 
 		moveGhosts(deltaT, timestamp);
+
+		// Audio management
+		const hasEyes = ghosts.some(g => g.isEyes);
+		const isFrightened = gameState.frightenedModeExpiresAt !== null;
+
+		if (hasEyes) {
+			stopSound('siren');
+			stopSound('powerPellet');
+			playSound('retreat');
+		} else if (isFrightened) {
+			stopSound('siren');
+			stopSound('retreat');
+			playSound('powerPellet');
+		} else {
+			stopSound('powerPellet');
+			stopSound('retreat');
+			playSound('siren');
+		}
+
 		if (timestamp - anim.lastGhostFrameTimestamp > GHOST_ANIMATION_FRAME_LENGTH) {
 			anim.lastGhostFrameTimestamp = timestamp;
 			anim.ghostFrame++;

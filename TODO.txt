@@ -8,8 +8,8 @@
 - [x] Gameplay: Implement Pinky's "Up/Left" targeting bug
 - [x] Visuals: Pause game, hide characters, and show score after eating a ghost
 - [ ] Gameplay: Implement Level 256 "Kill Screen" glitch
-- [ ] Audio: Add sound effects (Waka, Siren, Power Pellet, Eat Ghost, Death)
-- [ ] Audio: Add "Ready!" music and start-of-game intro
+- [x] Audio: Add sound effects (Waka, Siren, Power Pellet, Eat Ghost, Death)
+- [x] Audio: Add "Ready!" music and start-of-game intro
 - [ ] UX: Implement Intermission cutscenes
 - [ ] UX: Mute and Fullscreen controls
 - [ ] Visuals: Add fruit sprites
