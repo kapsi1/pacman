@@ -1,24 +1,17 @@
-// @ts-ignore
 import dot1Url from 'url:../assets/sounds/pacdot1.wav';
-// @ts-ignore
 import dot2Url from 'url:../assets/sounds/pacdot2.wav';
-// @ts-ignore
 import sirenUrl from 'url:../assets/sounds/pacghost1.wav';
-// @ts-ignore
 import powerPelletUrl from 'url:../assets/sounds/pacghostblue.wav';
-// @ts-ignore
 import energizerUrl from 'url:../assets/sounds/paccoin.wav';
-// @ts-ignore
 import eatGhostUrl from 'url:../assets/sounds/pacghosteat.wav';
-// @ts-ignore
 import deathUrl from 'url:../assets/sounds/pacclass2die.wav';
-// @ts-ignore
 import retreatUrl from 'url:../assets/sounds/pacghostretreat.wav';
-// @ts-ignore
 import startUrl from 'url:../assets/sounds/pacstart.wav';
+
 
 const sounds: { [key: string]: HTMLAudioElement } = {};
 let initialized = false;
+let isMuted = false;
 
 const soundFiles = {
   dot1: dot1Url,
@@ -36,6 +29,7 @@ export function initSounds() {
   if (initialized) return;
   for (const [key, path] of Object.entries(soundFiles)) {
     sounds[key] = new Audio(path as string);
+    sounds[key].muted = isMuted;
   }
   // Setup loops for background sounds
   if (sounds.siren) sounds.siren.loop = true;
@@ -44,18 +38,38 @@ export function initSounds() {
   initialized = true;
 }
 
-export function playSound(name: keyof typeof soundFiles) {
+const loopableSounds = ['siren', 'powerPellet', 'retreat'];
+
+export function setMuted(muted: boolean) {
+  isMuted = muted;
+  for (const [name, sound] of Object.entries(sounds)) {
+    if (loopableSounds.includes(name)) {
+      sound.muted = muted;
+    }
+  }
+}
+
+export function getMuted() {
+  return isMuted;
+}
+
+export function playSound(name: keyof typeof soundFiles, forceMute: boolean = false): HTMLAudioElement | null {
   const sound = sounds[name];
-  if (!sound) return;
+  if (!sound) return null;
   
   if (sound.loop) {
+    if (isMuted) return null;
     if (sound.paused) sound.play().catch(() => {});
+    return sound;
   } else {
     // For non-looping sounds, clone or reset to allow Rapid firing
     const clone = sound.cloneNode() as HTMLAudioElement;
+    clone.muted = forceMute;
     clone.play().catch(() => {});
+    return clone;
   }
 }
+
 
 export function stopSound(name: keyof typeof soundFiles) {
   const sound = sounds[name];
@@ -70,3 +84,4 @@ export function stopAllBackgroundSounds() {
   stopSound('powerPellet');
   stopSound('retreat');
 }
+

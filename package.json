@@ -2,8 +2,10 @@
   "name": "pacman",
   "type": "module",
   "scripts": {
-    "start": "parcel ./src/index.html",
-    "build": "parcel build ./src/index.html"
+    "predev": "rm -rf dist",
+    "dev": "parcel ./src/index.html",
+    "prebuild": "rm -rf dist",
+    "build": "parcel build ./src/index.html --public-url /pacman/"
   },
   "dependencies": {
     "@parcel/config-default": "^2.14.4",

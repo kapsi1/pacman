@@ -1,4 +1,5 @@
-import { Direction, Ghost, GhostMode, GhostName, GridPos, PacmanState, PxPos } from "./types";
+import { Direction, GhostMode, GhostName } from "./types";
+import type { Ghost, GridPos, PacmanState, PxPos } from "./types";
 import {
 	CELL_SIZE,
 	GHOST_ANIMATION_FRAME_LENGTH,
@@ -60,7 +61,7 @@ import {
 	getBestDirection,
 	getGhostTarget,
 } from "./utils";
-import { initSounds, playSound, stopSound, stopAllBackgroundSounds } from "./audio";
+import { initSounds, playSound, stopSound, stopAllBackgroundSounds, setMuted } from "./audio";
 
 const epsilon = 0.5;
 
@@ -110,6 +111,33 @@ const gameState: GameState = {
 	isWaitingForFirstStart: true,
 };
 
+let userMuted = false;
+
+function toggleMute() {
+	userMuted = !userMuted;
+	updateMuteState();
+}
+
+function updateMuteState() {
+	// Internal mute state (for background loops) is true if game is paused OR user muted
+	setMuted(userMuted || gameState.isPaused);
+	
+	const muteBtn = document.querySelector("#mute-button");
+	if (muteBtn) {
+		muteBtn.textContent = userMuted ? "UNMUTE" : "MUTE";
+	}
+}
+
+const muteBtn = document.querySelector("#mute-button");
+if (muteBtn) {
+	muteBtn.addEventListener("click", (e) => {
+		e.stopPropagation();
+		toggleMute();
+	});
+}
+
+
+
 const pacman: PacmanState = {
 	pos: gridToPx(PACMAN_START_POS),
 	dir: PACMAN_START_DIR,
@@ -135,7 +163,9 @@ let ghosts: Ghost[] = [];
 
 function resetLife() {
 	gameState.isPaused = true;
+	updateMuteState();
 	anim.deathAnimationFrame = 0;
+
 	anim.lastGhostFrameTimestamp = 0;
 	anim.lastDeathFrameTimestamp = 0;
 	gameState.lastTimestamp = null;
@@ -181,13 +211,28 @@ function resetLife() {
 	showReadyText();
 	drawEverything(0);
 	initSounds();
-	playSound('start');
-	setTimeout(() => {
+	updateMuteState();
+	const startSound = playSound('start', userMuted);
+
+	const startGame = () => {
 		hideReadyText();
 		gameState.isPaused = false;
+		updateMuteState();
 		requestAnimationFrame(tick);
-	}, STARTING_PAUSE);
+	};
+
+	if (startSound) {
+		startSound.onended = startGame;
+		// Fallback in case onended doesn't fire for some reason
+		setTimeout(() => {
+			if (gameState.isPaused) startGame();
+		}, STARTING_PAUSE + 1000);
+	} else {
+		setTimeout(startGame, STARTING_PAUSE);
+	}
 }
+
+
 
 function resetGameState() {
 	gameState.isGameOver = false;
@@ -216,8 +261,10 @@ function resetGameState() {
 	});
 	updateScore("00");
 	hideGameOver();
+	updateMuteState();
 	
 	if (gameState.isWaitingForFirstStart) {
+
 		showReadyText(); // Reuse READY text or add a separate one later
 		const readyEl = document.querySelector("#ready") as HTMLDivElement;
 		if (readyEl) readyEl.textContent = "CLICK TO START";
@@ -490,14 +537,14 @@ function handlePacmanCollisions(cell: GridPos) {
 		scoreChanged = true;
 		gameState.dotsEaten++;
 		pacman.pauseTimeRemaining += EAT_DOT_PAUSE_MS;
-		if (gameState.dotsEaten % 2 === 0) playSound('dot1');
-		else playSound('dot2');
+		if (gameState.dotsEaten % 2 === 0) playSound('dot1', userMuted);
+		else playSound('dot2', userMuted);
 	} else if (cellContent === "o") {
 		gameState.score += 50;
 		scoreChanged = true;
 		gameState.ghostsEatenThisEnergizer = 0;
 		pacman.pauseTimeRemaining += EAT_ENERGIZER_PAUSE_MS;
-		playSound('energizer');
+		playSound('energizer', userMuted);
 		gameState.frightenedModeExpiresAt = performance.now() + FRIGHTENED_DURATION_MS;
 		ghosts.forEach((ghost) => {
 			ghost.frightened = true;
@@ -527,11 +574,13 @@ document.addEventListener("keydown", (event) => {
 		case "`":
 		case " ":
 			gameState.isPaused = !gameState.isPaused;
+			updateMuteState();
 			if (!gameState.isPaused) {
 				gameState.lastTimestamp = null;
 				requestAnimationFrame(tick);
 			}
 			break;
+
 		case "w":
 		case "ArrowUp":
 			if (pacman.dir === Direction.Up) return;
@@ -569,7 +618,7 @@ function handleGhostEating() {
 		collidedGhost.isEyes = true;
 		collidedGhost.speed = getGhostSpeed(gameState.level, false, false, true);
 
-		playSound('eatGhost');
+		playSound('eatGhost', userMuted);
 		anim.ghostEatenPauseTimer = GHOST_EATEN_PAUSE_MS;
 		anim.ghostEatenScore = scoreGained;
 		anim.ghostEatenPos = { ...collidedGhost.pos };
@@ -588,7 +637,7 @@ function handleDeathAnimation(timestamp: number) {
 	if (timestamp - anim.lastDeathFrameTimestamp > PACMAN_DEATH_FRAME_LENGTH) {
 		if (anim.deathAnimationFrame === 0) {
 			stopAllBackgroundSounds();
-			playSound('death');
+			playSound('death', userMuted);
 		}
 		anim.lastDeathFrameTimestamp = timestamp;
 		anim.deathAnimationFrame++;
@@ -599,8 +648,10 @@ function handleDeathAnimation(timestamp: number) {
 			} else {
 				gameState.isPaused = true;
 				gameState.isGameOver = true;
+				updateMuteState();
 				showGameOver();
 			}
+
 		}
 	}
 }
@@ -652,15 +703,15 @@ function tick(timestamp: number) {
 		if (hasEyes) {
 			stopSound('siren');
 			stopSound('powerPellet');
-			playSound('retreat');
+			playSound('retreat', userMuted);
 		} else if (isFrightened) {
 			stopSound('siren');
 			stopSound('retreat');
-			playSound('powerPellet');
+			playSound('powerPellet', userMuted);
 		} else {
 			stopSound('powerPellet');
 			stopSound('retreat');
-			playSound('siren');
+			playSound('siren', userMuted);
 		}
 
 		if (timestamp - anim.lastGhostFrameTimestamp > GHOST_ANIMATION_FRAME_LENGTH) {

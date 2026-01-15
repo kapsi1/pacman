@@ -52,7 +52,7 @@ img {
 #ready,
 #game-over,
 .score {
-  font-family: 'Press Start';
+  font-family: 'Press Start', sans-serif;
   font-size: 3vh;
   position: absolute;
 }
@@ -75,16 +75,43 @@ img {
 #ready,
 #game-over {
   top: 50%;
-  left: 50%;
+  /* left: 50%; */
+  left: calc(50% + 38px);
   margin-top: 5.7vh;
+  transform: translateX(-50%);
 }
 
 #ready {
   color: #ff0;
-  margin-left: -5.7vh;
 }
 
 #game-over {
   color: #ff0000;
-  margin-left: -10.8vh;
 }
+
+.control-button {
+  font-family: 'Press Start', sans-serif;
+  font-size: 1.5vh;
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 2px solid #fff;
+  color: #fff;
+  padding: 10px 15px;
+  cursor: pointer;
+  z-index: 1000;
+  border-radius: 4px;
+  transition: all 0.1s ease;
+  user-select: none;
+}
+
+.control-button:hover {
+  background: #fff;
+  color: #000;
+}
+
+.control-button:active {
+  transform: scale(0.95);
+}
+
