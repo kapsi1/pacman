@@ -25,6 +25,13 @@ export function pointDistance(point1: PxPos, point2: PxPos): number {
   return Math.sqrt(Math.pow(point1.x - point2.x, 2) + Math.pow(point1.y - point2.y, 2));
 }
 
+// Squared Euclidean distance — cheaper than pointDistance for comparisons.
+export function pointDistanceSq(point1: PxPos, point2: PxPos): number {
+  const dx = point1.x - point2.x;
+  const dy = point1.y - point2.y;
+  return dx * dx + dy * dy;
+}
+
 export function isCellAllowed(gridPos: GridPos): boolean {
   if (!board[gridPos.y]) return false;
   if (!board[gridPos.y][gridPos.x]) return false;
@@ -116,8 +123,7 @@ export function isThereCollision(ghosts: Ghost[], pacmanPos: PxPos): boolean {
   for (let i = 0; i < ghosts.length; i++) {
     const ghost = ghosts[i];
     if (ghost.isEyes) continue;
-    const distance = pointDistance(ghost.pos, pacmanPos);
-    if (distance <= 1) {
+    if (pointDistanceSq(ghost.pos, pacmanPos) <= 1) {
       return true;
     }
   }
@@ -200,7 +206,7 @@ export function getBestDirection(ghost: Ghost, target: PxPos, allowedDirections:
   for (const dir of allowedDirections) {
     const nextCell = getNextCell(currentCell, dir);
     const nextPos = gridToPx(nextCell);
-    const dist = pointDistance(nextPos, target);
+    const dist = pointDistanceSq(nextPos, target);
     if (dist < minDistance) {
       minDistance = dist;
       bestDir = dir;
@@ -252,8 +258,8 @@ export function getGhostTarget(ghost: Ghost, pacman: PacmanState, blinkyPos: PxP
     }
 
     case GhostName.Clyde: {
-      const dist = pointDistance(ghost.pos, pacman.pos);
-      if (dist > 8 * CELL_SIZE) {
+      const dist = pointDistanceSq(ghost.pos, pacman.pos);
+      if (dist > (8 * CELL_SIZE) ** 2) {
         return pacman.pos;
       }
       return gridToPx(SCATTER_TARGETS.Clyde);

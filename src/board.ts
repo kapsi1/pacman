@@ -1,4 +1,4 @@
-import { ctx, TOP_MARGIN } from './canvas';
+import { ctx, TOP_MARGIN, SCREEN_WIDTH, SCREEN_HEIGHT, pixelRatio } from './canvas';
 import { CELL_SIZE, DEBUG_DOTS, DEBUG_GRID, DOT_SIZE, DRAW_DOTS, WALL_MARGIN, board } from './consts';
 import { gridToPx } from './utils';
 
@@ -10,8 +10,60 @@ const colors = {
   wall: '#2121de',
 };
 
+// ── Off-screen canvas ─────────────────────────────────────────────────────────
+// Same physical resolution as the main canvas; context scaled the same way.
+// Built once at load, then single dots/energizers are erased as they are eaten.
+
+const offCanvas = document.createElement('canvas');
+offCanvas.width  = SCREEN_WIDTH  * pixelRatio;
+offCanvas.height = SCREEN_HEIGHT * pixelRatio;
+const offCtx = offCanvas.getContext('2d') as CanvasRenderingContext2D;
+offCtx.imageSmoothingEnabled = false;
+offCtx.scale(pixelRatio, pixelRatio);
+
+function drawEnergizerToCtx(targetCtx: CanvasRenderingContext2D, x: number, y: number) {
+  targetCtx.rect(x + 2, y, 4, 8);
+  targetCtx.rect(x + 1, y + 1, 6, 6);
+  targetCtx.rect(x, y + 2, 8, 4);
+}
+
+function buildOffscreenCanvas() {
+  offCtx.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+  offCtx.fillStyle = colors.dot;
+  offCtx.beginPath();
+  board.forEach((row, y) => {
+    for (let x = 0; x < row.length; x++) {
+      const char = row[x];
+      const dotX = WALL_MARGIN + x * CELL_SIZE + CELL_SIZE / 2;
+      const dotY = TOP_MARGIN + WALL_MARGIN + y * CELL_SIZE + CELL_SIZE / 2;
+      if (char === '.') {
+        offCtx.rect(dotX - DOT_SIZE / 2, dotY - DOT_SIZE / 2, DOT_SIZE, DOT_SIZE);
+      } else if (char === 'o') {
+        drawEnergizerToCtx(offCtx, dotX - DOT_SIZE * 2, dotY - DOT_SIZE * 2);
+      }
+    }
+  });
+  offCtx.fill();
+}
+
+buildOffscreenCanvas();
+
+export function eraseDotAt(gridX: number, gridY: number) {
+  const dotX = WALL_MARGIN + gridX * CELL_SIZE + CELL_SIZE / 2;
+  const dotY = TOP_MARGIN + WALL_MARGIN + gridY * CELL_SIZE + CELL_SIZE / 2;
+  offCtx.clearRect(dotX - DOT_SIZE / 2, dotY - DOT_SIZE / 2, DOT_SIZE, DOT_SIZE);
+}
+
+export function eraseEnergizerAt(gridX: number, gridY: number) {
+  const dotX = WALL_MARGIN + gridX * CELL_SIZE + CELL_SIZE / 2;
+  const dotY = TOP_MARGIN + WALL_MARGIN + gridY * CELL_SIZE + CELL_SIZE / 2;
+  // Energizer bounding box is 8×8 logical pixels (DOT_SIZE*2 = 4 on each side).
+  offCtx.clearRect(dotX - DOT_SIZE * 2, dotY - DOT_SIZE * 2, DOT_SIZE * 4, DOT_SIZE * 4);
+}
+
+// ── Debug fallback (original per-frame iteration) ─────────────────────────────
+
 function drawEnergizer(x: number, y: number) {
-  // 8 x 8
   ctx.rect(x + 2, y, 4, 8);
   ctx.rect(x + 1, y + 1, 6, 6);
   ctx.rect(x, y + 2, 8, 4);
@@ -77,6 +129,20 @@ function drawDots() {
   }
 }
 
+// ── Public draw entry point ───────────────────────────────────────────────────
+
 export function drawBoard() {
-  drawDots();
+  if (DEBUG_DOTS || DEBUG_GRID) {
+    drawDots();
+    return;
+  }
+  // Blit the pre-rendered off-screen canvas.
+  // Source: full physical bitmap; Dest: full logical screen.
+  // ctx has an active pixelRatio scale, so the logical dest (SCREEN_WIDTH ×
+  // SCREEN_HEIGHT) maps to the same physical pixels as the offCanvas bitmap.
+  ctx.drawImage(
+    offCanvas,
+    0, 0, offCanvas.width, offCanvas.height,
+    0, 0, SCREEN_WIDTH, SCREEN_HEIGHT,
+  );
 }

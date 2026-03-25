@@ -32,7 +32,7 @@ import {
 	GHOST_EATEN_PAUSE_MS,
 } from "./consts";
 import { ctx, SCREEN_HEIGHT, SCREEN_WIDTH } from "./canvas";
-import { drawBoard } from "./board";
+import { drawBoard, eraseDotAt, eraseEnergizerAt } from "./board";
 import {
 	drawPacman,
 	drawGhosts,
@@ -45,6 +45,7 @@ import {
 	isHorizontalDir,
 	pxToGrid,
 	pointDistance,
+	pointDistanceSq,
 	getNextCell,
 	isCellAllowed,
 	offsetPos,
@@ -61,7 +62,7 @@ import {
 	getBestDirection,
 	getGhostTarget,
 } from "./utils";
-import { initSounds, playSound, stopSound, stopAllBackgroundSounds, setMuted } from "./audio";
+import { initSounds, playSound, stopAllBackgroundSounds, setMuted } from "./audio";
 
 const epsilon = 0.5;
 
@@ -112,6 +113,7 @@ const gameState: GameState = {
 };
 
 let userMuted = false;
+let currentAudioMode: 'siren' | 'retreat' | 'powerPellet' | null = null;
 
 function toggleMute() {
 	userMuted = !userMuted;
@@ -557,6 +559,8 @@ function handlePacmanCollisions(cell: GridPos) {
 		updateScore(gameState.score.toString());
 		const row = board[cell.y];
 		board[cell.y] = row.substring(0, cell.x) + " " + row.substring(cell.x + 1);
+		if (cellContent === ".") eraseDotAt(cell.x, cell.y);
+		else if (cellContent === "o") eraseEnergizerAt(cell.x, cell.y);
 
 		if (Math.floor(gameState.score / NEW_LIFE_EVERY_POINTS) > Math.floor(gameState.lastLifeScore / NEW_LIFE_EVERY_POINTS)) {
 			gameState.lives++;
@@ -606,7 +610,7 @@ document.addEventListener("keydown", (event) => {
 
 function handleGhostEating() {
 	const collidedGhost = ghosts.find(
-		(g) => !g.isEyes && pointDistance(g.pos, pacman.pos) <= COLLISION_DISTANCE,
+		(g) => !g.isEyes && pointDistanceSq(g.pos, pacman.pos) <= COLLISION_DISTANCE ** 2,
 	);
 	if (collidedGhost?.frightened) {
 		gameState.ghostsEatenThisEnergizer++;
@@ -630,13 +634,14 @@ function handleGhostEating() {
 
 function handleDeathAnimation(timestamp: number) {
 	const collidedGhost = ghosts.find(
-		(g) => !g.isEyes && pointDistance(g.pos, pacman.pos) <= COLLISION_DISTANCE,
+		(g) => !g.isEyes && pointDistanceSq(g.pos, pacman.pos) <= COLLISION_DISTANCE ** 2,
 	);
 	if (!collidedGhost || collidedGhost.isEyes) return;
 
 	if (timestamp - anim.lastDeathFrameTimestamp > PACMAN_DEATH_FRAME_LENGTH) {
 		if (anim.deathAnimationFrame === 0) {
 			stopAllBackgroundSounds();
+			currentAudioMode = null;
 			playSound('death', userMuted);
 		}
 		anim.lastDeathFrameTimestamp = timestamp;
@@ -696,22 +701,14 @@ function tick(timestamp: number) {
 
 		moveGhosts(deltaT, timestamp);
 
-		// Audio management
+		// Audio management — only switch sounds when mode actually changes.
 		const hasEyes = ghosts.some(g => g.isEyes);
 		const isFrightened = gameState.frightenedModeExpiresAt !== null;
-
-		if (hasEyes) {
-			stopSound('siren');
-			stopSound('powerPellet');
-			playSound('retreat', userMuted);
-		} else if (isFrightened) {
-			stopSound('siren');
-			stopSound('retreat');
-			playSound('powerPellet', userMuted);
-		} else {
-			stopSound('powerPellet');
-			stopSound('retreat');
-			playSound('siren', userMuted);
+		const newAudioMode: typeof currentAudioMode = hasEyes ? 'retreat' : isFrightened ? 'powerPellet' : 'siren';
+		if (newAudioMode !== currentAudioMode) {
+			currentAudioMode = newAudioMode;
+			stopAllBackgroundSounds();
+			playSound(newAudioMode, userMuted);
 		}
 
 		if (timestamp - anim.lastGhostFrameTimestamp > GHOST_ANIMATION_FRAME_LENGTH) {

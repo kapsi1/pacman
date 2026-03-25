@@ -23,4 +23,4 @@ ctx.textAlign = 'center';
 ctx.textBaseline = 'middle';
 ctx.imageSmoothingEnabled = false;
 
-export { ctx, SCREEN_WIDTH, SCREEN_HEIGHT, TOP_MARGIN, BOTTOM_MARGIN, BOARD_HEIGHT };
+export { ctx, SCREEN_WIDTH, SCREEN_HEIGHT, TOP_MARGIN, BOTTOM_MARGIN, BOARD_HEIGHT, pixelRatio };
